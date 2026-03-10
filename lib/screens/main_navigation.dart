@@ -13,6 +13,7 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
+  bool _isBottomBarVisible = true;
 
   // Colores principales de LumenSelah
   static const Color bgColor = Color(0xFFF9F6EE);
@@ -20,9 +21,15 @@ class _MainNavigationState extends State<MainNavigation> {
   static const Color accentColor = Color(0xFFECA646);
 
   // Las pantallas para cada pestaña
-  final List<Widget> _pages = [
+  List<Widget> get _pages => [
     const HomeScreen(),
-    const BibleReaderScreen(),
+    BibleReaderScreen(
+      onScrollVisibilityChanged: (isVisible) {
+        if (_isBottomBarVisible != isVisible) {
+          setState(() { _isBottomBarVisible = isVisible; });
+        }
+      },
+    ),
     const SearchScreenPlaceholder(),
     const ProfileScreenPlaceholder(),
   ];
@@ -37,35 +44,46 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: bgColor,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              offset: const Offset(0, -2),
-              blurRadius: 10,
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(icon: Icons.home_outlined, index: 0),
-                _buildNavItem(icon: Icons.menu_book_outlined, index: 1, isAccent: true),
-                _buildNavItem(icon: Icons.search, index: 2),
-                _buildNavItem(icon: Icons.menu, index: 3),
-              ],
+      body: Stack(
+        children: [
+          IndexedStack(
+            index: _selectedIndex,
+            children: _pages,
+          ),
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            bottom: _isBottomBarVisible ? 0 : -100,
+            left: 0,
+            right: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: bgColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    offset: const Offset(0, -2),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildNavItem(icon: Icons.home_outlined, index: 0),
+                      _buildNavItem(icon: Icons.menu_book_outlined, index: 1, isAccent: true),
+                      _buildNavItem(icon: Icons.search, index: 2),
+                      _buildNavItem(icon: Icons.menu, index: 3),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
