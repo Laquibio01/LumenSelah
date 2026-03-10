@@ -12,7 +12,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   // Colores extraídos del mockup (Pantalla Reader)
   static const Color bgColor = Color(0xFFF9F6EE); // Fondo crema claro
   static const Color textColor = Color(0xFF2E2E2E); // Gris muy oscuro/Negro
-  static const Color accentColor = Color(0xFFECA646); // Naranja del marcador
 
   @override
   Widget build(BuildContext context) {
@@ -22,11 +21,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         backgroundColor: bgColor,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: textColor, size: 20),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
         centerTitle: true,
+        automaticallyImplyLeading: false, // Previene el botón de volver por defecto
         title: Text(
           'Reader',
           style: GoogleFonts.montserrat(
@@ -37,14 +33,10 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: textColor.withOpacity(0.1),
-            height: 1.0,
-          ),
+          child: Container(color: textColor.withOpacity(0.1), height: 1.0),
         ),
       ),
       body: _buildReaderBody(),
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
@@ -87,11 +79,11 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   Widget _buildParagraph(String text) {
     // Implementación para destacar el número del versículo inline (el primer carácter numérico)
     final match = RegExp(r'^(\d+)\s+(.*)$').firstMatch(text);
-    
+
     if (match != null) {
       final number = match.group(1)!;
       final rest = match.group(2)!;
-      
+
       return RichText(
         text: TextSpan(
           children: [
@@ -125,64 +117,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         color: textColor,
         height: 1.6,
         letterSpacing: 0.2,
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            offset: const Offset(0, -2),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.home_outlined),
-                color: textColor.withOpacity(0.6),
-                iconSize: 28,
-                onPressed: () {
-                  Navigator.of(context).maybePop();
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.search),
-                color: textColor.withOpacity(0.6),
-                iconSize: 28,
-                onPressed: () {},
-              ),
-              // Botón central destacado (Bookmark)
-              Container(
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.bookmark),
-                  color: Colors.white,
-                  iconSize: 24,
-                  onPressed: () {},
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.menu),
-                color: textColor.withOpacity(0.6),
-                iconSize: 28,
-                onPressed: () {},
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
