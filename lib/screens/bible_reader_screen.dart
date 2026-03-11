@@ -15,9 +15,7 @@ class BibleReaderScreen extends StatefulWidget {
 }
 
 class _BibleReaderScreenState extends State<BibleReaderScreen> {
-  // Colores extraídos del mockup (Pantalla Reader)
-  static const Color bgColor = Color(0xFFF9F6EE); // Fondo crema claro
-  static const Color textColor = Color(0xFF2E2E2E); // Gris muy oscuro/Negro
+  // Los colores ahora se obtienen del tema
 
   int _currentBookId = 1;
   int _currentChapter = 1;
@@ -160,11 +158,17 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final bgColor = theme.scaffoldBackgroundColor;
+    final textColor = colorScheme.onBackground;
+    final accentColor = colorScheme.primary;
+    final secondaryColor = colorScheme.secondary;
     return Scaffold(
       backgroundColor: bgColor,
       body: Stack(
         children: [
-          _buildReaderBody(),
+          _buildReaderBody(textColor, accentColor),
           
           // Barra de navegación estilo píldora que toma el lugar de la principal
           AnimatedPositioned(
@@ -173,14 +177,14 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
             bottom: _isBottomBarVisible ? 100 : 32, // Si es visible global, va arriba. Si no, baja al fondo.
             left: 20,
             right: 20,
-            child: _buildChapterNavigation(),
+            child: _buildChapterNavigation(textColor, accentColor, secondaryColor),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildReaderBody() {
+  Widget _buildReaderBody(Color textColor, Color accentColor) {
     if (_isLoading || _verses.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -216,7 +220,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                 duration: const Duration(seconds: 2), // Fade out duration
                 curve: Curves.easeOut,
                 tween: ColorTween(
-                  begin: isHighlighted ? const Color(0xFFF4A261).withOpacity(0.3) : Colors.transparent, // Color naranja acento claro
+                  begin: isHighlighted ? accentColor.withOpacity(0.3) : Colors.transparent, // Color acento
                   end: Colors.transparent,
                 ),
                 builder: (context, color, child) {
@@ -230,7 +234,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                     child: child, // El texto renderizado que se pasa abajo
                   );
                 },
-                child: _buildParagraph('${v.verse} ${v.text}'),
+                child: _buildParagraph('${v.verse} ${v.text}', textColor),
               );
             }).toList(),
           ],
@@ -239,9 +243,10 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     );
   }
 
-  Widget _buildChapterNavigation() {
+  Widget _buildChapterNavigation(Color textColor, Color accentColor, Color secondaryColor) {
+    final theme = Theme.of(context);
     return Material(
-      color: Colors.white, // Color claro fondo app 
+      color: theme.brightness == Brightness.dark ? const Color(0xFF23262E) : Colors.white,
       borderRadius: BorderRadius.circular(28),
       elevation: 6,
       shadowColor: Colors.black.withOpacity(0.3),
@@ -258,14 +263,14 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               IconButton(
                 onPressed: _currentChapter > 1 ? () => _navigateChapter(-1) : null,
                 icon: const Icon(Icons.chevron_left, size: 28),
-                color: _currentChapter > 1 ? const Color(0xFF8CC193) : Colors.grey.withOpacity(0.3), // Verde
+                color: _currentChapter > 1 ? secondaryColor : Colors.grey.withOpacity(0.3),
               ),
               Expanded(
                 child: InkWell(
                   onTap: _openBibleIndex,
                   borderRadius: BorderRadius.circular(16),
-                  highlightColor: const Color(0xFFECA646).withOpacity(0.1), // Naranja claro 
-                  splashColor: const Color(0xFFECA646).withOpacity(0.2),    // Naranja splash
+                  highlightColor: accentColor.withOpacity(0.1),
+                  splashColor: accentColor.withOpacity(0.2),
                   child: Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -285,7 +290,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               IconButton(
                 onPressed: _currentChapter < _maxChapters ? () => _navigateChapter(1) : null,
                 icon: const Icon(Icons.chevron_right, size: 28),
-                color: _currentChapter < _maxChapters ? const Color(0xFF8CC193) : Colors.grey.withOpacity(0.3),
+                color: _currentChapter < _maxChapters ? secondaryColor : Colors.grey.withOpacity(0.3),
               ),
             ],
           ),
@@ -294,7 +299,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     );
   }
 
-  Widget _buildParagraph(String text) {
+  Widget _buildParagraph(String text, Color textColor) {
     // Limpieza agresiva de saltos de línea provenientes de la base de datos (Ej: Versículo 31 de Génesis 1)
     String cleanText = text.replaceAll(RegExp(r'[\r\n]+'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
 

@@ -11,19 +11,17 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Colores extraídos del mockup
-  static const Color bgColor = Color(0xFFF9F6EE); // Fondo crema
-  static const Color textColor = Color(0xFF2E2E2E); // Gris muy oscuro
-  static const Color orangeAccent = Color(0xFFECA646); // Naranja
-  static const Color greenAccent = Color(0xFF8CC193); // Verde
-  static const Color cardColor = Colors.white;
+  // Colores ahora se obtienen del tema
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textColor = colorScheme.onBackground;
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: bgColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
@@ -46,11 +44,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 10),
-                  _buildDailyStreakCard(),
+                  _buildDailyStreakCard(theme, colorScheme, textColor),
                   const SizedBox(height: 24),
-                  _buildDailyVerseCard(),
+                  _buildDailyVerseCard(theme, colorScheme, textColor),
                   const SizedBox(height: 32),
-                  _buildPathMap(context),
+                  _buildPathMap(context, theme, colorScheme, textColor),
                 ],
               ),
             ),
@@ -62,11 +60,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
 
-  Widget _buildDailyStreakCard() {
+  Widget _buildDailyStreakCard(ThemeData theme, ColorScheme colorScheme, Color textColor) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: cardColor,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -110,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                     child: Row(
                       children: [
-                        Icon(Icons.local_fire_department, color: streak > 0 ? orangeAccent : Colors.grey, size: 28),
+                        Icon(Icons.local_fire_department, color: streak > 0 ? colorScheme.primary : Colors.grey, size: 28),
                         const SizedBox(width: 8),
                         Text(
                           'Racha Diaria',
@@ -126,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     '$streak días',
                     style: GoogleFonts.montserrat(
-                      color: streak > 0 ? orangeAccent : Colors.grey,
+                      color: streak > 0 ? colorScheme.primary : Colors.grey,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -138,13 +136,13 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildDayIndicator('L', weeklyProgress[0], isToday: todayWeekday == 1), // Monday
-                  _buildDayIndicator('M', weeklyProgress[1], isToday: todayWeekday == 2), // Tuesday
-                  _buildDayIndicator('M', weeklyProgress[2], isToday: todayWeekday == 3), // Wednesday
-                  _buildDayIndicator('J', weeklyProgress[3], isToday: todayWeekday == 4), // Thursday
-                  _buildDayIndicator('V', weeklyProgress[4], isToday: todayWeekday == 5), // Friday
-                  _buildDayIndicator('S', weeklyProgress[5], isToday: todayWeekday == 6), // Saturday
-                  _buildDayIndicator('D', weeklyProgress[6], isToday: todayWeekday == 7), // Sunday
+                  _buildDayIndicator('L', weeklyProgress[0], colorScheme, textColor, isToday: todayWeekday == 1), // Monday
+                  _buildDayIndicator('M', weeklyProgress[1], colorScheme, textColor, isToday: todayWeekday == 2), // Tuesday
+                  _buildDayIndicator('M', weeklyProgress[2], colorScheme, textColor, isToday: todayWeekday == 3), // Wednesday
+                  _buildDayIndicator('J', weeklyProgress[3], colorScheme, textColor, isToday: todayWeekday == 4), // Thursday
+                  _buildDayIndicator('V', weeklyProgress[4], colorScheme, textColor, isToday: todayWeekday == 5), // Friday
+                  _buildDayIndicator('S', weeklyProgress[5], colorScheme, textColor, isToday: todayWeekday == 6), // Saturday
+                  _buildDayIndicator('D', weeklyProgress[6], colorScheme, textColor, isToday: todayWeekday == 7), // Sunday
                 ],
               ),
             ],
@@ -154,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDayIndicator(String day, bool isChecked, {bool isToday = false}) {
+  Widget _buildDayIndicator(String day, bool isChecked, ColorScheme colorScheme, Color textColor, {bool isToday = false}) {
     return Column(
       children: [
         Container(
@@ -162,19 +160,19 @@ class _HomeScreenState extends State<HomeScreen> {
           height: 36,
           decoration: BoxDecoration(
             color: isChecked 
-                ? orangeAccent.withOpacity(0.15) 
+                ? colorScheme.primary.withOpacity(0.15) 
                 : (isToday ? Colors.grey.withOpacity(0.25) : Colors.grey.withOpacity(0.1)),
             shape: BoxShape.circle,
             border: Border.all(
               color: isChecked 
-                  ? orangeAccent 
+                  ? colorScheme.primary 
                   : (isToday ? Colors.grey.shade400 : Colors.transparent),
               width: isToday ? 2.0 : 1.5,
             ),
           ),
           child: Center(
             child: isChecked
-                ? const Icon(Icons.local_fire_department, color: orangeAccent, size: 20)
+                ? Icon(Icons.local_fire_department, color: colorScheme.primary, size: 20)
                 : Text(
                     day,
                     style: GoogleFonts.montserrat(
@@ -189,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(
           day,
           style: GoogleFonts.montserrat(
-            color: isChecked ? orangeAccent : (isToday ? textColor : Colors.grey),
+            color: isChecked ? colorScheme.primary : (isToday ? textColor : Colors.grey),
             fontSize: 12,
             fontWeight: isChecked || isToday ? FontWeight.bold : FontWeight.w500,
           ),
@@ -198,14 +196,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDailyVerseCard() {
+  Widget _buildDailyVerseCard(ThemeData theme, ColorScheme colorScheme, Color textColor) {
     return Container(
       padding: const EdgeInsets.all(20),
-      // Mismo diseño pero ahora envuelve un FutureBuilder
       decoration: BoxDecoration(
-        color: cardColor,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: greenAccent.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: colorScheme.secondary.withOpacity(0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -220,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             'Versículo Diario',
             style: GoogleFonts.montserrat(
-              color: greenAccent,
+              color: colorScheme.secondary,
               fontSize: 14,
               fontWeight: FontWeight.bold,
             ),
@@ -267,16 +264,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPathMap(BuildContext context) {
-    Color lineColor = const Color(0xFF9ED3A5).withOpacity(0.5);
+  Widget _buildPathMap(BuildContext context, ThemeData theme, ColorScheme colorScheme, Color textColor) {
+    Color lineColor = colorScheme.secondary.withOpacity(0.5);
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildNode('Genesis 1', isCompleted: true),
+            _buildNode('Genesis 1', isCompleted: true, colorScheme: colorScheme, textColor: textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildNode('Genesis 2', isCompleted: true),
+            _buildNode('Genesis 2', isCompleted: true, colorScheme: colorScheme, textColor: textColor),
           ],
         ),
         Transform.translate(
@@ -286,9 +283,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildNode('Genesis 4', isCompleted: false),
+            _buildNode('Genesis 4', isCompleted: false, colorScheme: colorScheme, textColor: textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildNode('Genesis 3', isCurrent: true), // Zig-zag
+            _buildNode('Genesis 3', isCurrent: true, colorScheme: colorScheme, textColor: textColor), // Zig-zag
           ],
         ),
         Transform.translate(
@@ -298,9 +295,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildNode('Genesis 5', isCompleted: false),
+            _buildNode('Genesis 5', isCompleted: false, colorScheme: colorScheme, textColor: textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildNode('Genesis 6', isCompleted: false),
+            _buildNode('Genesis 6', isCompleted: false, colorScheme: colorScheme, textColor: textColor),
           ],
         ),
         const SizedBox(height: 48),
@@ -309,10 +306,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNode(String title, {bool isCompleted = false, bool isCurrent = false}) {
-    Color bgColor = isCompleted ? const Color(0xFF9ED3A5) : Colors.white;
-    Color borderColor = isCompleted ? const Color(0xFF9ED3A5) : const Color(0xFF8FBF9F);
-    Color textColorItem = isCurrent ? Colors.white : (isCompleted ? Colors.white : const Color(0xFF2E2E2E));
+  Widget _buildNode(String title, {bool isCompleted = false, bool isCurrent = false, required ColorScheme colorScheme, required Color textColor}) {
+    Color bgColor = isCompleted ? colorScheme.secondary : Colors.white;
+    Color borderColor = isCompleted ? colorScheme.secondary : colorScheme.secondary.withOpacity(0.5);
+    Color textColorItem = isCurrent ? Colors.white : (isCompleted ? Colors.white : textColor);
 
     BoxDecoration decor = BoxDecoration(
       color: bgColor,
@@ -325,14 +322,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (isCurrent) {
       decor = BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFF4A261), Color(0xFFECA646)],
+        gradient: LinearGradient(
+          colors: [colorScheme.primary.withOpacity(0.85), colorScheme.primary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: const Color(0xFFF4A261).withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4)),
+          BoxShadow(color: colorScheme.primary.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4)),
         ]
       );
     }
@@ -367,6 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildStartLessonButton(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return ElevatedButton(
       onPressed: () async {
         await StreakService().checkAndUpdateStreak(); 
@@ -376,13 +374,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Lección completada', style: GoogleFonts.montserrat()),
-              backgroundColor: const Color(0xFF8CC193),
+              backgroundColor: colorScheme.secondary,
             ),
           );
         }
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFFF4A261),
+        backgroundColor: colorScheme.primary,
         foregroundColor: Colors.white,
         elevation: 3,
         padding: const EdgeInsets.symmetric(vertical: 18),

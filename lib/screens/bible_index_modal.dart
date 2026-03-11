@@ -11,9 +11,7 @@ class BibleIndexModal extends StatelessWidget {
     required this.onBookSelected,
   }) : super(key: key);
 
-  static const Color bgColor = Color(0xFFF9F6EE); 
-  static const Color textColor = Color(0xFF2E2E2E);
-  static const Color greenAccent = Color(0xFF8CC193);
+  // Los colores ahora se obtienen del tema
 
   @override
   Widget build(BuildContext context) {
@@ -21,13 +19,18 @@ class BibleIndexModal extends StatelessWidget {
     final oldTestament = books.where((b) => b['testament_id'] == 1).toList();
     final newTestament = books.where((b) => b['testament_id'] == 2).toList();
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final bgColor = theme.scaffoldBackgroundColor;
+    final textColor = colorScheme.onBackground;
+    final greenAccent = colorScheme.secondary;
     return DefaultTabController(
       length: 2,
       child: Container(
         height: MediaQuery.of(context).size.height * 0.8,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
@@ -36,7 +39,7 @@ class BibleIndexModal extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.3),
+                color: theme.dividerColor.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -62,8 +65,8 @@ class BibleIndexModal extends StatelessWidget {
             Expanded(
               child: TabBarView(
                 children: [
-                  _buildBookList(oldTestament, context),
-                  _buildBookList(newTestament, context),
+                  _buildBookList(oldTestament, context, textColor),
+                  _buildBookList(newTestament, context, textColor),
                 ],
               ),
             ),
@@ -73,11 +76,12 @@ class BibleIndexModal extends StatelessWidget {
     );
   }
 
-  Widget _buildBookList(List<Map<String, dynamic>> bookList, BuildContext context) {
+  Widget _buildBookList(List<Map<String, dynamic>> bookList, BuildContext context, Color textColor) {
+    final theme = Theme.of(context);
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: bookList.length,
-      separatorBuilder: (context, index) => Divider(color: Colors.grey.withOpacity(0.2), height: 1),
+      separatorBuilder: (context, index) => Divider(color: theme.dividerColor.withOpacity(0.2), height: 1),
       itemBuilder: (context, index) {
         final book = bookList[index];
         return ListTile(

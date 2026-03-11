@@ -2,6 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../helpers/database_helper.dart';
 
+// === PANTALLA 2: SELECCIÓN DE CAPÍTULO ===
+class BibleIndexChaptersScreen extends StatefulWidget {
+  final int bookId;
+  final String bookName;
+  final Function(int bookId, int chapter, int verse) onVerseSelected;
+
+  const BibleIndexChaptersScreen({
+    Key? key,
+    required this.bookId,
+    required this.bookName,
+    required this.onVerseSelected,
+  }) : super(key: key);
+
+  @override
+  State<BibleIndexChaptersScreen> createState() => _BibleIndexChaptersScreenState();
+}
+
 // === PANTALLA 1: SELECCIÓN DE LIBRO ===
 class BibleIndexBooksScreen extends StatefulWidget {
   final List<Map<String, dynamic>> books;
@@ -18,15 +35,18 @@ class BibleIndexBooksScreen extends StatefulWidget {
 }
 
 class _BibleIndexBooksScreenState extends State<BibleIndexBooksScreen> {
-  static const Color bgColor = Color(0xFFF9F6EE); 
-  static const Color textColor = Color(0xFF2E2E2E);
-  static const Color greenAccent = Color(0xFF8CC193);
+  // Los colores ahora se obtienen del tema
 
   @override
   Widget build(BuildContext context) {
     final oldTestament = widget.books.where((b) => b['testament_id'] == 1).toList();
     final newTestament = widget.books.where((b) => b['testament_id'] == 2).toList();
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final bgColor = theme.scaffoldBackgroundColor;
+    final textColor = colorScheme.onBackground;
+    final greenAccent = colorScheme.secondary;
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -35,7 +55,7 @@ class _BibleIndexBooksScreenState extends State<BibleIndexBooksScreen> {
           backgroundColor: bgColor,
           elevation: 0,
           scrolledUnderElevation: 0,
-          leading: const BackButton(color: textColor),
+          leading: BackButton(color: textColor),
           title: Text(
             'Libros de la Biblia',
             style: GoogleFonts.montserrat(color: textColor, fontWeight: FontWeight.bold),
@@ -52,19 +72,20 @@ class _BibleIndexBooksScreenState extends State<BibleIndexBooksScreen> {
         ),
         body: TabBarView(
           children: [
-            _buildBookList(oldTestament),
-            _buildBookList(newTestament),
+            _buildBookList(oldTestament, textColor),
+            _buildBookList(newTestament, textColor),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBookList(List<Map<String, dynamic>> bookList) {
+  Widget _buildBookList(List<Map<String, dynamic>> bookList, Color textColor) {
+    final theme = Theme.of(context);
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: bookList.length,
-      separatorBuilder: (context, index) => Divider(color: Colors.grey.withOpacity(0.2), height: 1),
+      separatorBuilder: (context, index) => Divider(color: theme.dividerColor.withOpacity(0.2), height: 1),
       itemBuilder: (context, index) {
         final book = bookList[index];
         return ListTile(
@@ -72,7 +93,7 @@ class _BibleIndexBooksScreenState extends State<BibleIndexBooksScreen> {
             book['name'],
             style: GoogleFonts.montserrat(color: textColor, fontSize: 16, fontWeight: FontWeight.w600),
           ),
-          trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+          trailing: Icon(Icons.chevron_right, color: theme.iconTheme.color?.withOpacity(0.7) ?? Colors.grey),
           onTap: () {
             Navigator.push(
               context,
@@ -92,26 +113,7 @@ class _BibleIndexBooksScreenState extends State<BibleIndexBooksScreen> {
 }
 
 // === PANTALLA 2: SELECCIÓN DE CAPÍTULO ===
-class BibleIndexChaptersScreen extends StatefulWidget {
-  final int bookId;
-  final String bookName;
-  final Function(int bookId, int chapter, int verse) onVerseSelected;
-
-  const BibleIndexChaptersScreen({
-    Key? key,
-    required this.bookId,
-    required this.bookName,
-    required this.onVerseSelected,
-  }) : super(key: key);
-
-  @override
-  State<BibleIndexChaptersScreen> createState() => _BibleIndexChaptersScreenState();
-}
-
 class _BibleIndexChaptersScreenState extends State<BibleIndexChaptersScreen> {
-  static const Color bgColor = Color(0xFFF9F6EE); 
-  static const Color textColor = Color(0xFF2E2E2E);
-  
   int _maxChapters = 0;
   bool _isLoading = true;
 
@@ -131,13 +133,17 @@ class _BibleIndexChaptersScreenState extends State<BibleIndexChaptersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final bgColor = theme.scaffoldBackgroundColor;
+    final textColor = colorScheme.onBackground;
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
         backgroundColor: bgColor,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: const BackButton(color: textColor),
+        leading: BackButton(color: textColor),
         title: Text(
           widget.bookName,
           style: GoogleFonts.montserrat(color: textColor, fontWeight: FontWeight.bold),
@@ -155,6 +161,9 @@ class _BibleIndexChaptersScreenState extends State<BibleIndexChaptersScreen> {
               itemCount: _maxChapters,
               itemBuilder: (context, index) {
                 final chapter = index + 1;
+                final theme = Theme.of(context);
+                final colorScheme = theme.colorScheme;
+                final textColor = colorScheme.onBackground;
                 return InkWell(
                   onTap: () {
                     Navigator.push(
@@ -173,20 +182,20 @@ class _BibleIndexChaptersScreenState extends State<BibleIndexChaptersScreen> {
                   child: Container(
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                      color: theme.brightness == Brightness.dark ? colorScheme.surface : Colors.white,
+                      border: Border.all(color: theme.dividerColor.withOpacity(0.3)),
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2)),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
                       ],
                     ),
                     child: Text(
                       '$chapter',
-                      style: GoogleFonts.montserrat(
-                        color: textColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: textColor),
                     ),
                   ),
                 );
@@ -194,6 +203,7 @@ class _BibleIndexChaptersScreenState extends State<BibleIndexChaptersScreen> {
             ),
     );
   }
+// (Bloque duplicado eliminado)
 }
 
 // === PANTALLA 3: SELECCIÓN DE VERSÍCULO ===
@@ -216,8 +226,7 @@ class BibleIndexVersesScreen extends StatefulWidget {
 }
 
 class _BibleIndexVersesScreenState extends State<BibleIndexVersesScreen> {
-  static const Color bgColor = Color(0xFFF9F6EE); 
-  static const Color textColor = Color(0xFF2E2E2E);
+  // Remove hardcoded colors, use theme instead
   
   int _maxVerses = 0;
   bool _isLoading = true;
@@ -239,13 +248,19 @@ class _BibleIndexVersesScreenState extends State<BibleIndexVersesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final bgColor = theme.scaffoldBackgroundColor;
+    final cardColor = theme.cardColor;
+    final borderColor = theme.dividerColor.withOpacity(0.3);
+    final textColor = colorScheme.onBackground;
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
         backgroundColor: bgColor,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: const BackButton(color: textColor),
+        leading: BackButton(color: textColor),
         title: Text(
           '${widget.bookName} ${widget.chapter}',
           style: GoogleFonts.montserrat(color: textColor, fontWeight: FontWeight.bold),
@@ -272,8 +287,8 @@ class _BibleIndexVersesScreenState extends State<BibleIndexVersesScreen> {
                   child: Container(
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: const Color(0xFF8CC193).withOpacity(0.5)),
+                      color: cardColor,
+                      border: Border.all(color: borderColor),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(

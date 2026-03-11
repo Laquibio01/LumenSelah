@@ -2,8 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'main_navigation.dart';
 
+
+typedef SplashFinishCallback = void Function();
+
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  final SplashFinishCallback? onFinish;
+  const SplashScreen({Key? key, this.onFinish}) : super(key: key);
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -14,9 +18,9 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Timer(const Duration(milliseconds: 3500), () {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainNavigation()),
-      );
+      if (widget.onFinish != null) {
+        widget.onFinish!();
+      }
     });
   }
 
