@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../helpers/database_helper.dart';
+import '../helpers/streak_helper.dart';
+import 'bible_index_screen.dart';
 
 class BibleReaderScreen extends StatefulWidget {
-  const BibleReaderScreen({super.key});
+  final Function(bool isVisible)? onScrollVisibilityChanged;
+
+  const BibleReaderScreen({Key? key, this.onScrollVisibilityChanged}) : super(key: key);
 
   @override
   State<BibleReaderScreen> createState() => _BibleReaderScreenState();
@@ -12,85 +18,288 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   // Colores extraídos del mockup (Pantalla Reader)
   static const Color bgColor = Color(0xFFF9F6EE); // Fondo crema claro
   static const Color textColor = Color(0xFF2E2E2E); // Gris muy oscuro/Negro
-  static const Color accentColor = Color(0xFFECA646); // Naranja del marcador
+
+  int _currentBookId = 1;
+  int _currentChapter = 1;
+  int _maxChapters = 1;
+  String _currentBookName = 'Cargando...';
+  
+  bool _isLoading = true;
+  bool _isBottomBarVisible = true;
+
+  List<Verse> _verses = [];
+  int? _highlightVerse;
+  List<GlobalKey> _verseKeys = [];
+  
+  final ScrollController _scrollController = ScrollController();
+  List<Map<String, dynamic>> _allBooks = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+    
+    _scrollController.addListener(() {
+      if (_scrollController.position.userScrollDirection == ScrollDirection.reverse) {
+        if (_isBottomBarVisible) {
+          setState(() { _isBottomBarVisible = false; });
+          widget.onScrollVisibilityChanged?.call(false);
+        }
+      } else if (_scrollController.position.userScrollDirection == ScrollDirection.forward) {
+        if (!_isBottomBarVisible) {
+          setState(() { _isBottomBarVisible = true; });
+          widget.onScrollVisibilityChanged?.call(true);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadInitialData() async {
+    final pos = await PrefsHelper.getLastBiblePosition();
+    _allBooks = await DatabaseHelper.getBooks();
+    
+    setState(() {
+      _currentBookId = pos['bookId']!;
+      _currentChapter = pos['chapter']!;
+    });
+    
+    await _loadChapterData();
+  }
+
+  Future<void> _loadChapterData() async {
+    setState(() { _isLoading = true; });
+    
+    _maxChapters = await DatabaseHelper.getMaxChapters(_currentBookId);
+    
+    final book = _allBooks.firstWhere((b) => b['id'] == _currentBookId, orElse: () => {'name': 'Genesis'});
+    _currentBookName = book['name'];
+
+    final verses = await DatabaseHelper.getChapter(_currentBookId, _currentChapter);
+
+    // Guardar dónde nos quedamos
+    await PrefsHelper.saveLastBiblePosition(_currentBookId, _currentChapter);
+
+    setState(() { 
+      _verses = verses;
+      _verseKeys = List.generate(verses.length, (index) => GlobalKey());
+      _isLoading = false; 
+    });
+
+    // Validar auto-scroll si venimos de la pantalla de Índice
+    _scrollToHighlight();
+  }
+
+  void _scrollToHighlight() {
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      if (_highlightVerse != null && _verseKeys.isNotEmpty) {
+        final verseIndex = _verses.indexWhere((v) => v.verse == _highlightVerse);
+        if (verseIndex >= 0 && verseIndex < _verseKeys.length && _verseKeys[verseIndex].currentContext != null) {
+          Scrollable.ensureVisible(
+            _verseKeys[verseIndex].currentContext!,
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeInOut,
+          );
+          
+          // Desactivar el highlight tras un tiempo para que el TweenAnimation haga su fade-out natural
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (mounted) {
+              setState(() { _highlightVerse = null; });
+            }
+          });
+        }
+      }
+    });
+  }
+
+  void _openBibleIndex() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BibleIndexBooksScreen(
+          books: _allBooks,
+          onVerseSelected: (bookId, chapter, verse) {
+            Navigator.popUntil(context, (route) => route.isFirst);
+            
+            // Si es el mismo libro y mismo capítulo solo iluminamos y scrolleamos, no re-cargamos la DB.
+            if (bookId == _currentBookId && chapter == _currentChapter) {
+              setState(() {
+                _highlightVerse = verse; 
+              });
+              // Forzamos el post-frame que hace el scroll:
+              _scrollToHighlight();
+            } else {
+              setState(() {
+                _currentBookId = bookId;
+                _currentChapter = chapter;
+                _highlightVerse = verse; 
+              });
+              _loadChapterData();
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  void _navigateChapter(int direction) {
+    if (direction < 0 && _currentChapter > 1) {
+      setState(() { _currentChapter--; });
+      _loadChapterData();
+    } else if (direction > 0 && _currentChapter < _maxChapters) {
+      setState(() { _currentChapter++; });
+      _loadChapterData();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: AppBar(
-        backgroundColor: bgColor,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: textColor,
-            size: 20,
-          ),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        centerTitle: true,
-        title: Text(
-          'Reader',
-          style: GoogleFonts.montserrat(
-            color: textColor,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: textColor.withValues(alpha: 0.1),
-            height: 1.0,
-          ),
-        ),
-      ),
-      body: _buildReaderBody(),
-      bottomNavigationBar: _buildBottomNavBar(),
-    );
-  }
-
-  Widget _buildReaderBody() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: Stack(
         children: [
-          Text(
-            'Genesis 1:1',
-            style: GoogleFonts.montserrat(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildParagraph(
-            '1 Lorem ipsum dolor sit amet, consectetur adipiscing elit, and sourbrondon water man: med the soul threms an a frivsee thon howser of the slow althswi the light in the saundiment, and the woon he ways of two wors.',
-          ),
-          const SizedBox(height: 20),
-          _buildParagraph(
-            '2 And the wolkwith withers the sont of light cansprato his emen and leamout the pvaverous thore slass, the whos srewfe srure their onto: rnto Jesus.',
-          ),
-          const SizedBox(height: 20),
-          _buildParagraph(
-            '4 And the siahmdfait the world the noft nond, they reduces the reions and memoot the vicerdivos in the Earth, the chlewnade wittheat to the laom.',
-          ),
-          const SizedBox(height: 20),
-          _buildParagraph(
-            '5 Concurrent as his sider and conservators was the licener sin or something similar to fill the empty space in this mockup.',
+          _buildReaderBody(),
+          
+          // Barra de navegación estilo píldora que toma el lugar de la principal
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            bottom: _isBottomBarVisible ? 100 : 32, // Si es visible global, va arriba. Si no, baja al fondo.
+            left: 20,
+            right: 20,
+            child: _buildChapterNavigation(),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildReaderBody() {
+    if (_isLoading || _verses.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return SafeArea(
+      top: true,
+      bottom: false,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0, bottom: 150.0), // Padding inferior extenso
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 24.0),
+              child: Text(
+                '$_currentBookName $_currentChapter',
+                style: GoogleFonts.montserrat(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
+            ..._verses.asMap().entries.map((entry) {
+              final index = entry.key;
+              final v = entry.value;
+              final bool isHighlighted = _highlightVerse == v.verse;
+
+              return TweenAnimationBuilder<Color?>(
+                key: _verseKeys[index], // Key para auto-scroll
+                duration: const Duration(seconds: 2), // Fade out duration
+                curve: Curves.easeOut,
+                tween: ColorTween(
+                  begin: isHighlighted ? const Color(0xFFF4A261).withOpacity(0.3) : Colors.transparent, // Color naranja acento claro
+                  end: Colors.transparent,
+                ),
+                builder: (context, color, child) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+                    margin: const EdgeInsets.only(bottom: 14.0),
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: child, // El texto renderizado que se pasa abajo
+                  );
+                },
+                child: _buildParagraph('${v.verse} ${v.text}'),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChapterNavigation() {
+    return Material(
+      color: Colors.white, // Color claro fondo app 
+      borderRadius: BorderRadius.circular(28),
+      elevation: 6,
+      shadowColor: Colors.black.withOpacity(0.3),
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28), // Bordes súper redondeados
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                onPressed: _currentChapter > 1 ? () => _navigateChapter(-1) : null,
+                icon: const Icon(Icons.chevron_left, size: 28),
+                color: _currentChapter > 1 ? const Color(0xFF8CC193) : Colors.grey.withOpacity(0.3), // Verde
+              ),
+              Expanded(
+                child: InkWell(
+                  onTap: _openBibleIndex,
+                  borderRadius: BorderRadius.circular(16),
+                  highlightColor: const Color(0xFFECA646).withOpacity(0.1), // Naranja claro 
+                  splashColor: const Color(0xFFECA646).withOpacity(0.2),    // Naranja splash
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        '${_currentBookName.toUpperCase()} $_currentChapter',
+                        style: GoogleFonts.montserrat(
+                          color: textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _currentChapter < _maxChapters ? () => _navigateChapter(1) : null,
+                icon: const Icon(Icons.chevron_right, size: 28),
+                color: _currentChapter < _maxChapters ? const Color(0xFF8CC193) : Colors.grey.withOpacity(0.3),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildParagraph(String text) {
+    // Limpieza agresiva de saltos de línea provenientes de la base de datos (Ej: Versículo 31 de Génesis 1)
+    String cleanText = text.replaceAll(RegExp(r'[\r\n]+'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+
     // Implementación para destacar el número del versículo inline (el primer carácter numérico)
-    final match = RegExp(r'^(\d+)\s+(.*)$').firstMatch(text);
+    final match = RegExp(r'^(\d+)\s+(.*)$').firstMatch(cleanText);
 
     if (match != null) {
       final number = match.group(1)!;
@@ -100,7 +309,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         text: TextSpan(
           children: [
             TextSpan(
-              text: '$number ',
+              text: number + ' ',
               style: GoogleFonts.montserrat(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -123,70 +332,12 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     }
 
     return Text(
-      text,
+      cleanText,
       style: GoogleFonts.merriweather(
         fontSize: 18,
         color: textColor,
         height: 1.6,
         letterSpacing: 0.2,
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            offset: const Offset(0, -2),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.home_outlined),
-                color: textColor.withValues(alpha: 0.6),
-                iconSize: 28,
-                onPressed: () {
-                  Navigator.of(context).maybePop();
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.search),
-                color: textColor.withValues(alpha: 0.6),
-                iconSize: 28,
-                onPressed: () {},
-              ),
-              // Botón central destacado (Bookmark)
-              Container(
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.bookmark),
-                  color: Colors.white,
-                  iconSize: 24,
-                  onPressed: () {},
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.menu),
-                color: textColor.withValues(alpha: 0.6),
-                iconSize: 28,
-                onPressed: () {},
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
