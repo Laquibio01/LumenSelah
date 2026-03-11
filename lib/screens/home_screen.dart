@@ -1,17 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import '../services/streak_service.dart';
 import 'bible_reader_screen.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   // Colores extraídos del mockup
   static const Color bgColor = Color(0xFFF9F6EE); // Fondo crema
   static const Color textColor = Color(0xFF2E2E2E); // Gris muy oscuro
   static const Color orangeAccent = Color(0xFFECA646); // Naranja
   static const Color greenAccent = Color(0xFF8CC193); // Verde
   static const Color cardColor = Colors.white;
+
+  final StreakService _streakService = StreakService();
+  int _streakCount = 0;
+  bool _isCheckedToday = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateStreak();
+  }
+
+  Future<void> _updateStreak() async {
+    await _streakService.checkAndUpdateStreak();
+    final count = await _streakService.getStreakCount();
+    final isChecked = await _streakService.isTodayChecked();
+    if (mounted) {
+      setState(() {
+        _streakCount = count;
+        _isCheckedToday = isChecked;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,8 +89,8 @@ class HomeScreen extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    bgColor.withOpacity(0.0),
-                    bgColor.withOpacity(0.9),
+                    bgColor.withValues(alpha: 0.0),
+                    bgColor.withValues(alpha: 0.9),
                     bgColor,
                   ],
                 ),
@@ -109,7 +136,7 @@ class HomeScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -122,7 +149,11 @@ class HomeScreen extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.local_fire_department, color: orangeAccent, size: 28),
+                  const Icon(
+                    Icons.local_fire_department,
+                    color: orangeAccent,
+                    size: 28,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Daily Streak',
@@ -135,7 +166,7 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               Text(
-                '4h',
+                '$_streakCount d',
                 style: GoogleFonts.montserrat(
                   color: orangeAccent,
                   fontSize: 16,
@@ -144,19 +175,62 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Barra de progreso
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: 0.6, // 60%
-              minHeight: 8,
-              backgroundColor: orangeAccent.withOpacity(0.2),
-              valueColor: const AlwaysStoppedAnimation<Color>(orangeAccent),
-            ),
-          ),
+          const SizedBox(height: 16),
+          _buildWeeklyStreakIndicator(),
         ],
       ),
+    );
+  }
+
+  Widget _buildWeeklyStreakIndicator() {
+    final now = DateTime.now();
+    final todayWeekday = now.weekday; // 1 = Lunes, 7 = Domingo
+    final dayLabels = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(7, (index) {
+        final dayIndex = index + 1;
+        bool isSelected = false;
+
+        if (dayIndex == todayWeekday) {
+          isSelected = _isCheckedToday;
+        } else if (dayIndex < todayWeekday) {
+          // Si el día ya pasó, está iluminado si la racha es lo suficientemente larga
+          isSelected = _streakCount > (todayWeekday - dayIndex);
+        }
+
+        return Column(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isSelected ? orangeAccent : Colors.transparent,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected
+                      ? orangeAccent
+                      : textColor.withValues(alpha: 0.1),
+                  width: 1.5,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  dayLabels[index],
+                  style: GoogleFonts.montserrat(
+                    color: isSelected
+                        ? Colors.white
+                        : textColor.withValues(alpha: 0.4),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }),
     );
   }
 
@@ -166,10 +240,13 @@ class HomeScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: greenAccent.withOpacity(0.3), width: 1.5),
+        border: Border.all(
+          color: greenAccent.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -200,7 +277,7 @@ class HomeScreen extends StatelessWidget {
           Text(
             'Salmos 119:105',
             style: GoogleFonts.montserrat(
-              color: textColor.withOpacity(0.6),
+              color: textColor.withValues(alpha: 0.6),
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -244,7 +321,12 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNode({required String title, bool isCompleted = false, bool isActive = false, bool isLocked = false}) {
+  Widget _buildNode({
+    required String title,
+    bool isCompleted = false,
+    bool isActive = false,
+    bool isLocked = false,
+  }) {
     Color bg = Colors.white;
     Color border = greenAccent;
     Color iconColor = Colors.white;
@@ -279,7 +361,9 @@ class HomeScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: isCompleted || isActive ? Colors.transparent : Colors.green.withOpacity(0.1),
+                  color: isCompleted || isActive
+                      ? Colors.transparent
+                      : Colors.green.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: iconColor, size: 20),
@@ -304,7 +388,7 @@ class HomeScreen extends StatelessWidget {
     return Container(
       width: 40,
       height: 4,
-      color: greenAccent.withOpacity(0.5),
+      color: greenAccent.withValues(alpha: 0.5),
     );
   }
 
@@ -312,14 +396,15 @@ class HomeScreen extends StatelessWidget {
     return Container(
       height: 40,
       padding: EdgeInsets.only(
-        left: alignLeft ? 45 : 0, 
-        right: alignRight ? 45 : 0
+        left: alignLeft ? 45 : 0,
+        right: alignRight ? 45 : 0,
       ),
-      alignment: alignRight ? Alignment.centerRight : alignLeft ? Alignment.centerLeft : Alignment.center,
-      child: Container(
-        width: 4,
-        color: greenAccent.withOpacity(0.5),
-      ),
+      alignment: alignRight
+          ? Alignment.centerRight
+          : alignLeft
+          ? Alignment.centerLeft
+          : Alignment.center,
+      child: Container(width: 4, color: greenAccent.withValues(alpha: 0.5)),
     );
   }
 }

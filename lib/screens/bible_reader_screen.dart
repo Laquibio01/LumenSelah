@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class BibleReaderScreen extends StatefulWidget {
-  const BibleReaderScreen({Key? key}) : super(key: key);
+  const BibleReaderScreen({super.key});
 
   @override
   State<BibleReaderScreen> createState() => _BibleReaderScreenState();
@@ -23,7 +23,11 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: textColor, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: textColor,
+            size: 20,
+          ),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         centerTitle: true,
@@ -38,7 +42,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(
-            color: textColor.withOpacity(0.1),
+            color: textColor.withValues(alpha: 0.1),
             height: 1.0,
           ),
         ),
@@ -87,16 +91,16 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   Widget _buildParagraph(String text) {
     // Implementación para destacar el número del versículo inline (el primer carácter numérico)
     final match = RegExp(r'^(\d+)\s+(.*)$').firstMatch(text);
-    
+
     if (match != null) {
       final number = match.group(1)!;
       final rest = match.group(2)!;
-      
+
       return RichText(
         text: TextSpan(
           children: [
             TextSpan(
-              text: number + ' ',
+              text: '$number ',
               style: GoogleFonts.montserrat(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -135,7 +139,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         color: bgColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             offset: const Offset(0, -2),
             blurRadius: 10,
           ),
@@ -149,7 +153,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.home_outlined),
-                color: textColor.withOpacity(0.6),
+                color: textColor.withValues(alpha: 0.6),
                 iconSize: 28,
                 onPressed: () {
                   Navigator.of(context).maybePop();
@@ -157,7 +161,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.search),
-                color: textColor.withOpacity(0.6),
+                color: textColor.withValues(alpha: 0.6),
                 iconSize: 28,
                 onPressed: () {},
               ),
@@ -176,7 +180,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.menu),
-                color: textColor.withOpacity(0.6),
+                color: textColor.withValues(alpha: 0.6),
                 iconSize: 28,
                 onPressed: () {},
               ),
