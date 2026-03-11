@@ -6,9 +6,26 @@ class StreakService {
   static const String _keyWeeklyProgress = 'weekly_progress'; // List of ISO strings of days checked in this week
 
   /// Gets the current streak count.
+  /// Validates the streak before returning it. If the user missed yesterday, 
+  /// the visible streak is automatically reset to 0 even if they haven't checked in yet today.
   Future<int> getStreakCount() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_keyStreakCount) ?? 0;
+    int currentStreak = prefs.getInt(_keyStreakCount) ?? 0;
+    
+    final lastCheckInStr = prefs.getString(_keyLastCheckIn);
+    if (lastCheckInStr != null && currentStreak > 0) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final lastCheckIn = DateTime.parse(lastCheckInStr);
+      
+      final difference = today.difference(lastCheckIn).inDays;
+      if (difference > 1) {
+        // Streak is dead
+        return 0;
+      }
+    }
+
+    return currentStreak;
   }
 
   /// Checks and updates the daily streak.
@@ -59,9 +76,7 @@ class StreakService {
     // Remove dates that are not from the current week (Monday-Sunday)
     progress.removeWhere((dateStr) {
       DateTime date = DateTime.parse(dateStr);
-      // If difference is greater than 7, it's definitely a past week
-      // Or if the weekday is later in the week than today, it's from a previous week
-      return today.difference(date).inDays >= 7 || date.weekday > today.weekday;
+      return !_isSameWeek(date, today);
     });
 
     String todayStr = today.toIso8601String();
@@ -83,13 +98,28 @@ class StreakService {
 
     for (String dateStr in progressStr) {
       DateTime date = DateTime.parse(dateStr);
+      
       // Validates that it's in the same week
-      if (today.difference(date).inDays < 7 && date.weekday <= today.weekday) {
+      if (_isSameWeek(date, today)) {
         weeklyStatus[date.weekday - 1] = true; // weekday is 1-7 (Mon-Sun)
       }
     }
 
     return weeklyStatus;
+  }
+
+  /// Helper to determine if two dates fall in the same calendar week (Monday to Sunday).
+  bool _isSameWeek(DateTime date1, DateTime date2) {
+    // Normalize both to midnight to avoid time-of-day edge cases
+    DateTime d1 = DateTime(date1.year, date1.month, date1.day);
+    DateTime d2 = DateTime(date2.year, date2.month, date2.day);
+    
+    // Find the Monday of the week for both dates
+    // date.weekday is 1 for Monday, 7 for Sunday.
+    DateTime monday1 = d1.subtract(Duration(days: d1.weekday - 1));
+    DateTime monday2 = d2.subtract(Duration(days: d2.weekday - 1));
+    
+    return monday1.isAtSameMomentAs(monday2);
   }
 
   /// Explicitly resets the streak (optional utility).

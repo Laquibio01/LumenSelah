@@ -84,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
           int streak = snapshot.hasData ? (snapshot.data![0] as int) : 0;
           List<bool> weeklyProgress = snapshot.hasData ? (snapshot.data![1] as List<bool>) : List.filled(7, false);
+          int todayWeekday = DateTime.now().weekday;
           
           return Column(
             children: [
@@ -137,13 +138,13 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildDayIndicator('L', weeklyProgress[0]), // Monday
-                  _buildDayIndicator('M', weeklyProgress[1]), // Tuesday
-                  _buildDayIndicator('M', weeklyProgress[2]), // Wednesday
-                  _buildDayIndicator('J', weeklyProgress[3]), // Thursday
-                  _buildDayIndicator('V', weeklyProgress[4]), // Friday
-                  _buildDayIndicator('S', weeklyProgress[5]), // Saturday
-                  _buildDayIndicator('D', weeklyProgress[6]), // Sunday
+                  _buildDayIndicator('L', weeklyProgress[0], isToday: todayWeekday == 1), // Monday
+                  _buildDayIndicator('M', weeklyProgress[1], isToday: todayWeekday == 2), // Tuesday
+                  _buildDayIndicator('M', weeklyProgress[2], isToday: todayWeekday == 3), // Wednesday
+                  _buildDayIndicator('J', weeklyProgress[3], isToday: todayWeekday == 4), // Thursday
+                  _buildDayIndicator('V', weeklyProgress[4], isToday: todayWeekday == 5), // Friday
+                  _buildDayIndicator('S', weeklyProgress[5], isToday: todayWeekday == 6), // Saturday
+                  _buildDayIndicator('D', weeklyProgress[6], isToday: todayWeekday == 7), // Sunday
                 ],
               ),
             ],
@@ -153,18 +154,22 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDayIndicator(String day, bool isChecked) {
+  Widget _buildDayIndicator(String day, bool isChecked, {bool isToday = false}) {
     return Column(
       children: [
         Container(
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: isChecked ? orangeAccent.withOpacity(0.15) : Colors.grey.withOpacity(0.1),
+            color: isChecked 
+                ? orangeAccent.withOpacity(0.15) 
+                : (isToday ? Colors.grey.withOpacity(0.25) : Colors.grey.withOpacity(0.1)),
             shape: BoxShape.circle,
             border: Border.all(
-              color: isChecked ? orangeAccent : Colors.transparent,
-              width: 1.5,
+              color: isChecked 
+                  ? orangeAccent 
+                  : (isToday ? Colors.grey.shade400 : Colors.transparent),
+              width: isToday ? 2.0 : 1.5,
             ),
           ),
           child: Center(
@@ -173,8 +178,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 : Text(
                     day,
                     style: GoogleFonts.montserrat(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
+                      color: isToday ? textColor : Colors.grey,
+                      fontWeight: isToday ? FontWeight.w900 : FontWeight.bold,
                       fontSize: 14,
                     ),
                   ),
@@ -184,9 +189,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(
           day,
           style: GoogleFonts.montserrat(
-            color: isChecked ? orangeAccent : Colors.grey,
+            color: isChecked ? orangeAccent : (isToday ? textColor : Colors.grey),
             fontSize: 12,
-            fontWeight: isChecked ? FontWeight.bold : FontWeight.w500,
+            fontWeight: isChecked || isToday ? FontWeight.bold : FontWeight.w500,
           ),
         ),
       ],
