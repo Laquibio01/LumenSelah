@@ -1,0 +1,9 @@
+flutter_native_splash:
+  color: "#181B23"
+  image: assets/splash/SelahLogo.png
+  android: true
+  ios: true
+  web: true
+  android_gravity: center
+  ios_content_mode: center
+  fullscreen: true

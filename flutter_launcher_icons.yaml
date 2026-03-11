@@ -1,0 +1,7 @@
+flutter_icons:
+  android: true
+  ios: true
+  web: true
+  image_path: "assets/splash/SelahLogo.png"
+  adaptive_icon_background: "#262C36"
+  adaptive_icon_foreground: "assets/splash/SelahLogo.png"
