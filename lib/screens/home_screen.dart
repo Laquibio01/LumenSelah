@@ -76,10 +76,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      child: FutureBuilder<int>(
-        future: StreakService().getStreakCount(),
-        builder: (context, snapshot) {
-          int streak = snapshot.data ?? 0;
+      child: FutureBuilder(
+        future: Future.wait([
+          StreakService().getStreakCount(),
+          StreakService().getWeeklyProgress()
+        ]),
+        builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
+          int streak = snapshot.hasData ? (snapshot.data![0] as int) : 0;
+          List<bool> weeklyProgress = snapshot.hasData ? (snapshot.data![1] as List<bool>) : List.filled(7, false);
           
           return Column(
             children: [
@@ -128,21 +132,64 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              // Barra de progreso (simbólica)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: streak > 0 ? 1.0 : 0.0, 
-                  minHeight: 8,
-                  backgroundColor: orangeAccent.withOpacity(0.2),
-                  valueColor: AlwaysStoppedAnimation<Color>(streak > 0 ? orangeAccent : Colors.grey),
-                ),
+              const SizedBox(height: 16),
+              // Días de la semana
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildDayIndicator('L', weeklyProgress[0]), // Monday
+                  _buildDayIndicator('M', weeklyProgress[1]), // Tuesday
+                  _buildDayIndicator('M', weeklyProgress[2]), // Wednesday
+                  _buildDayIndicator('J', weeklyProgress[3]), // Thursday
+                  _buildDayIndicator('V', weeklyProgress[4]), // Friday
+                  _buildDayIndicator('S', weeklyProgress[5]), // Saturday
+                  _buildDayIndicator('D', weeklyProgress[6]), // Sunday
+                ],
               ),
             ],
           );
         }
       ),
+    );
+  }
+
+  Widget _buildDayIndicator(String day, bool isChecked) {
+    return Column(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: isChecked ? orangeAccent.withOpacity(0.15) : Colors.grey.withOpacity(0.1),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isChecked ? orangeAccent : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+          child: Center(
+            child: isChecked
+                ? const Icon(Icons.local_fire_department, color: orangeAccent, size: 20)
+                : Text(
+                    day,
+                    style: GoogleFonts.montserrat(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          day,
+          style: GoogleFonts.montserrat(
+            color: isChecked ? orangeAccent : Colors.grey,
+            fontSize: 12,
+            fontWeight: isChecked ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 
