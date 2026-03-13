@@ -49,9 +49,9 @@ class LessonsPathScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildNode('Genesis 1', isCompleted: true, colorScheme: colorScheme, textColor: textColor),
+            _buildNode('Genesis 1', isCompleted: true, colorScheme: colorScheme, textColor: textColor, theme: theme),
             Container(width: 50, height: 4, color: lineColor),
-            _buildNode('Genesis 2', isCompleted: true, colorScheme: colorScheme, textColor: textColor),
+            _buildNode('Genesis 2', isCompleted: true, colorScheme: colorScheme, textColor: textColor, theme: theme),
           ],
         ),
         Transform.translate(
@@ -61,9 +61,9 @@ class LessonsPathScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildNode('Genesis 4', isCompleted: false, colorScheme: colorScheme, textColor: textColor),
+            _buildNode('Genesis 4', isCompleted: false, colorScheme: colorScheme, textColor: textColor, theme: theme),
             Container(width: 50, height: 4, color: lineColor),
-            _buildNode('Genesis 3', isCurrent: true, colorScheme: colorScheme, textColor: textColor),
+            _buildNode('Genesis 3', isCurrent: true, colorScheme: colorScheme, textColor: textColor, theme: theme),
           ],
         ),
         Transform.translate(
@@ -73,9 +73,9 @@ class LessonsPathScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildNode('Genesis 5', isCompleted: false, colorScheme: colorScheme, textColor: textColor),
+            _buildNode('Genesis 5', isCompleted: false, colorScheme: colorScheme, textColor: textColor, theme: theme),
             Container(width: 50, height: 4, color: lineColor),
-            _buildNode('Genesis 6', isCompleted: false, colorScheme: colorScheme, textColor: textColor),
+            _buildNode('Genesis 6', isCompleted: false, colorScheme: colorScheme, textColor: textColor, theme: theme),
           ],
         ),
         const SizedBox(height: 48),
@@ -84,7 +84,7 @@ class LessonsPathScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNode(String title, {bool isCompleted = false, bool isCurrent = false, required ColorScheme colorScheme, required Color textColor}) {
+  Widget _buildNode(String title, {bool isCompleted = false, bool isCurrent = false, required ColorScheme colorScheme, required Color textColor, required ThemeData theme}) {
     // Usar cardColor para nodos no completados, secondary para completados
     Color bgColor = isCompleted ? colorScheme.secondary : theme.cardColor;
     Color borderColor = isCompleted ? colorScheme.secondary : colorScheme.secondary.withOpacity(0.5);
