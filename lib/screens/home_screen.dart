@@ -115,7 +115,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       _loadData();
                       setState(() {});
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Depuración: Racha y lecciones reiniciadas')));
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text('Depuración', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+                            content: Text('La racha diaria y el progreso de las lecciones han sido reiniciados.', style: GoogleFonts.montserrat()),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text('Aceptar', style: GoogleFonts.montserrat(color: colorScheme.primary)),
+                              )
+                            ],
+                          ),
+                        );
                       }
                     },
                     onLongPress: () async {
@@ -125,7 +137,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       _loadData();
                       setState(() {});
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Depuración: Racha y lecciones reiniciadas a 0')));
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text('Depuración', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+                            content: Text('La racha y las lecciones se reiniciaron a 0.', style: GoogleFonts.montserrat()),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text('Aceptar', style: GoogleFonts.montserrat(color: colorScheme.primary)),
+                              )
+                            ],
+                          ),
+                        );
                       }
                     },
                     child: Row(
@@ -286,10 +310,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDynamicNode(int id, String title, ColorScheme colorScheme, Color textColor) {
+  Widget _buildDynamicNode(int id, String title, ThemeData theme, ColorScheme colorScheme, Color textColor) {
     bool isCompleted = id < _unlockedLesson;
     bool isCurrent = id == _unlockedLesson;
-    return _buildNode(title, isCompleted: isCompleted, isCurrent: isCurrent, colorScheme: colorScheme, textColor: textColor);
+    return _buildNode(title, isCompleted: isCompleted, isCurrent: isCurrent, theme: theme, colorScheme: colorScheme, textColor: textColor);
   }
 
   Widget _buildPathMap(BuildContext context, ThemeData theme, ColorScheme colorScheme, Color textColor) {
@@ -299,9 +323,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildDynamicNode(1, 'Genesis 1', colorScheme, textColor),
+            _buildDynamicNode(1, 'Genesis 1', theme, colorScheme, textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildDynamicNode(2, 'Genesis 2', colorScheme, textColor),
+            _buildDynamicNode(2, 'Genesis 2', theme, colorScheme, textColor),
           ],
         ),
         Transform.translate(
@@ -311,9 +335,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildDynamicNode(4, 'Genesis 4', colorScheme, textColor),
+            _buildDynamicNode(4, 'Genesis 4', theme, colorScheme, textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildDynamicNode(3, 'Genesis 3', colorScheme, textColor), // Zig-zag
+            _buildDynamicNode(3, 'Genesis 3', theme, colorScheme, textColor), // Zig-zag
           ],
         ),
         Transform.translate(
@@ -323,9 +347,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildDynamicNode(5, 'Genesis 5', colorScheme, textColor),
+            _buildDynamicNode(5, 'Genesis 5', theme, colorScheme, textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildDynamicNode(6, 'Genesis 6', colorScheme, textColor),
+            _buildDynamicNode(6, 'Genesis 6', theme, colorScheme, textColor),
           ],
         ),
         const SizedBox(height: 48),
@@ -334,8 +358,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNode(String title, {bool isCompleted = false, bool isCurrent = false, required ColorScheme colorScheme, required Color textColor}) {
-    Color bgColor = isCompleted ? colorScheme.secondary : Colors.white;
+  Widget _buildNode(String title, {bool isCompleted = false, bool isCurrent = false, required ThemeData theme, required ColorScheme colorScheme, required Color textColor}) {
+    bool isDark = theme.brightness == Brightness.dark;
+    Color bgColor = isCompleted ? colorScheme.secondary : (isDark ? theme.cardColor : Colors.white);
     Color borderColor = isCompleted ? colorScheme.secondary : colorScheme.secondary.withOpacity(0.5);
     Color textColorItem = isCurrent ? Colors.white : (isCompleted ? Colors.white : textColor);
 
@@ -362,6 +387,16 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    // Determine the icon based on node state to match LessonsTabScreen
+    IconData nodeIcon;
+    if (isCurrent) {
+      nodeIcon = Icons.local_fire_department;
+    } else if (isCompleted) {
+      nodeIcon = Icons.menu_book_rounded;
+    } else {
+      nodeIcon = Icons.lock_outline;
+    }
+
     return Container(
       width: 90,
       height: 90,
@@ -369,14 +404,11 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (isCompleted || isCurrent)
-            Icon(
-              isCompleted ? Icons.check : Icons.local_fire_department,
-              color: Colors.white,
-              size: 28,
-            )
-          else
-            const SizedBox(height: 28),
+          Icon(
+            nodeIcon,
+            color: (isCompleted || isCurrent) ? Colors.white : Colors.grey,
+            size: 28,
+          ),
           const SizedBox(height: 8),
           Text(
             title,
