@@ -6,10 +6,13 @@ import 'home_screen.dart';
 import 'bible_reader_screen.dart';
 import 'profile_screen.dart';
 
+
 class MainNavigation extends StatefulWidget {
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode?> onThemeModeChanged;
-  const MainNavigation({Key? key, required this.themeMode, required this.onThemeModeChanged}) : super(key: key);
+  final VoidCallback onLogout;
+  final String? sessionUser;
+  const MainNavigation({Key? key, required this.themeMode, required this.onThemeModeChanged, required this.onLogout, required this.sessionUser}) : super(key: key);
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -32,6 +35,8 @@ class _MainNavigationState extends State<MainNavigation> {
     ProfileScreen(
       themeMode: widget.themeMode,
       onThemeModeChanged: widget.onThemeModeChanged,
+      onLogout: widget.onLogout,
+      sessionUser: widget.sessionUser,
     ),
   ];
 

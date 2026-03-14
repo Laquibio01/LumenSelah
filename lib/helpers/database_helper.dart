@@ -36,6 +36,84 @@ class Verse {
 }
 
 class DatabaseHelper {
+  // Inicializa la tabla de usuarios si no existe
+  static Future<void> initUserTable() async {
+    final db = await getDatabase();
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL
+      )
+    ''');
+    
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS user_stats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        streak_days INTEGER DEFAULT 1,
+        verses_read INTEGER DEFAULT 0,
+        app_time_minutes INTEGER DEFAULT 0,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+      )
+    ''');
+  }
+
+  // Registra un usuario nuevo, retorna true si fue exitoso, false si el usuario ya existe
+  static Future<bool> registerUser(String username, String password) async {
+    await initUserTable();
+    final db = await getDatabase();
+    // Verifica si ya existe
+    final existing = await db.query('users', where: 'username = ?', whereArgs: [username]);
+    if (existing.isNotEmpty) return false;
+    
+    int newId = await db.insert('users', {'username': username, 'password': password});
+    // Seed blank user stats
+    await db.insert('user_stats', {'user_id': newId, 'streak_days': 1, 'verses_read': 0, 'app_time_minutes': 0});
+    return true;
+  }
+
+  // Obtiene estadisticas de un usuario
+  static Future<Map<String, dynamic>> getUserStats(int userId) async {
+    await initUserTable();
+    final db = await getDatabase();
+    final res = await db.query('user_stats', where: 'user_id = ?', whereArgs: [userId]);
+    if (res.isNotEmpty) {
+      return res.first;
+    }
+    return {'streak_days': 0, 'verses_read': 0, 'app_time_minutes': 0};
+  }
+
+  // Obtiene un usuario por nombre de usuario
+  static Future<Map<String, dynamic>?> getUser(String username) async {
+    final db = await getDatabase();
+    final existing = await db.query('users', where: 'username = ?', whereArgs: [username]);
+    if (existing.isNotEmpty) {
+      return existing.first;
+    }
+    return null;
+  }
+
+  // Actualiza un usuario (cambia el username y/o password)
+  // Retorna true si fue exitoso, false si el nuevo username ya existe (y no es el mismo)
+  static Future<bool> updateUser(String oldUsername, String newUsername, String newPassword) async {
+    final db = await getDatabase();
+    
+    // Si están cambiando el username, verifica que el nuevo no exista
+    if (oldUsername != newUsername) {
+       final existing = await db.query('users', where: 'username = ?', whereArgs: [newUsername]);
+       if (existing.isNotEmpty) return false;
+    }
+
+    int rows = await db.update(
+      'users', 
+      {'username': newUsername, 'password': newPassword},
+      where: 'username = ?',
+      whereArgs: [oldUsername]
+    );
+
+    return rows > 0;
+  }
   static Database? _database;
 
   static Future<Database> getDatabase() async {
