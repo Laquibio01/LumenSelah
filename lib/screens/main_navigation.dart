@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'home_screen.dart';
 import 'bible_reader_screen.dart';
 import 'profile_screen.dart';
+import 'lessons_tab_screen.dart';
 
 
 class MainNavigation extends StatefulWidget {
@@ -21,6 +22,7 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
   bool _isBottomBarVisible = true;
+  Key _lessonsTabKey = UniqueKey();
 
   List<Widget> get _pages => [
     const HomeScreen(),
@@ -31,7 +33,7 @@ class _MainNavigationState extends State<MainNavigation> {
         }
       },
     ),
-    const SearchScreenPlaceholder(),
+    LessonsTabScreen(key: _lessonsTabKey),
     ProfileScreen(
       themeMode: widget.themeMode,
       onThemeModeChanged: widget.onThemeModeChanged,
@@ -42,6 +44,10 @@ class _MainNavigationState extends State<MainNavigation> {
 
   void _onItemTapped(int index) {
     setState(() {
+      if (index == 2 && _selectedIndex != 2) {
+        // Regenerate key to force reload when switching to the lessons tab
+        _lessonsTabKey = UniqueKey();
+      }
       _selectedIndex = index;
     });
   }
@@ -100,7 +106,7 @@ class _MainNavigationState extends State<MainNavigation> {
                       children: [
                         _buildNavItem(icon: Icons.home_outlined, index: 0),
                         _buildNavItem(icon: Icons.menu_book_outlined, index: 1, isAccent: true),
-                        _buildNavItem(icon: Icons.search, index: 2),
+                        _buildNavItem(icon: Icons.timeline, index: 2),
                         _buildNavItem(icon: Icons.menu, index: 3),
                       ],
                     ),
@@ -146,17 +152,3 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-// Pantalla Placeholder para Buscador
-class SearchScreenPlaceholder extends StatelessWidget {
-  const SearchScreenPlaceholder({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Buscador',
-        style: GoogleFonts.montserrat(fontSize: 24, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-}
