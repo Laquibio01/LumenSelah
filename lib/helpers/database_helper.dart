@@ -240,4 +240,20 @@ class DatabaseHelper {
     final db = await getDatabase();
     return await db.query('book', orderBy: 'id ASC');
   }
+
+  // Busca una palabra en toda la Biblia
+  static Future<List<Verse>> searchBible(String keyword) async {
+    final db = await getDatabase();
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT v.*, b.name as book_name 
+      FROM verse v 
+      JOIN book b ON v.book_id = b.id 
+      WHERE v.text LIKE ?
+      ORDER BY v.book_id ASC, v.chapter ASC, v.verse ASC
+    ''', ['%$keyword%']);
+
+    return List.generate(maps.length, (i) {
+      return Verse.fromMap(maps[i]);
+    });
+  }
 }

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PrefsHelper {
@@ -6,6 +7,12 @@ class PrefsHelper {
 
   static const String _lastBookIdKey = 'lastBookId';
   static const String _lastChapterKey = 'lastChapterKey';
+  static const String _highlightedVersesKey = 'highlightedVerses';
+  static const String _favoriteVersesKey = 'favoriteVerses';
+  static const String _verseNotesKey = 'verseNotes';
+
+  static const String _fontSizeKey = 'readerFontSize';
+  static const String _lineHeightKey = 'readerLineHeight';
 
   // Verifica la racha actual (si pasó 1 día, se añade 1; si pasaron >1 días, regresa a 0; si es en el mismo día, se queda igual)
   // Devuelve la cantidad de días de racha vigente
@@ -80,6 +87,76 @@ class PrefsHelper {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_lastBookIdKey, bookId);
     await prefs.setInt(_lastChapterKey, chapter);
+  }
+
+  static Future<Map<String, int>> getHighlightedVerses() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? jsonString = prefs.getString(_highlightedVersesKey);
+    if (jsonString != null) {
+      try {
+        final Map<String, dynamic> decoded = jsonDecode(jsonString);
+        return decoded.map((key, value) => MapEntry(key, value as int));
+      } catch (e) {
+        return {};
+      }
+    }
+    return {};
+  }
+
+  static Future<void> saveHighlightedVerses(Map<String, int> verses) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String jsonString = jsonEncode(verses);
+    await prefs.setString(_highlightedVersesKey, jsonString);
+  }
+
+  static Future<List<String>> getFavoriteVerses() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_favoriteVersesKey) ?? [];
+  }
+
+  static Future<void> saveFavoriteVerses(List<String> favorites) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_favoriteVersesKey, favorites);
+  }
+
+  static Future<Map<String, String>> getVerseNotes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? jsonString = prefs.getString(_verseNotesKey);
+    if (jsonString != null) {
+      try {
+        final Map<String, dynamic> decoded = jsonDecode(jsonString);
+        return decoded.map((key, value) => MapEntry(key, value.toString()));
+      } catch (e) {
+        return {};
+      }
+    }
+    return {};
+  }
+
+  static Future<void> saveVerseNotes(Map<String, String> notes) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String jsonString = jsonEncode(notes);
+    await prefs.setString(_verseNotesKey, jsonString);
+  }
+
+  static Future<double> getReaderFontSize() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_fontSizeKey) ?? 18.0;
+  }
+
+  static Future<void> saveReaderFontSize(double size) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_fontSizeKey, size);
+  }
+
+  static Future<double> getReaderLineHeight() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_lineHeightKey) ?? 1.6;
+  }
+
+  static Future<void> saveReaderLineHeight(double height) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_lineHeightKey, height);
   }
 
   // == MÉTODOS DE PRUEBA (DEBUG) ==
