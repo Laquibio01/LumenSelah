@@ -14,6 +14,10 @@ class PrefsHelper {
   static const String _fontSizeKey = 'readerFontSize';
   static const String _lineHeightKey = 'readerLineHeight';
 
+  // Lecciones y Vidas
+  static const String _globalLivesKey = 'globalLives';
+  static const String _unlockedLessonKey = 'unlockedLesson';
+
   // Verifica la racha actual (si pasó 1 día, se añade 1; si pasaron >1 días, regresa a 0; si es en el mismo día, se queda igual)
   // Devuelve la cantidad de días de racha vigente
   static Future<int> getStreak() async {
@@ -159,6 +163,30 @@ class PrefsHelper {
     await prefs.setDouble(_lineHeightKey, height);
   }
 
+  // == LECCIONES Y VIDAS ==
+
+  static Future<int> getGlobalLives() async {
+    final prefs = await SharedPreferences.getInstance();
+    // 3 vidas por defecto
+    return prefs.getInt(_globalLivesKey) ?? 3;
+  }
+
+  static Future<void> saveGlobalLives(int lives) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_globalLivesKey, lives);
+  }
+
+  static Future<int> getUnlockedLesson() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Lección 1 por defecto
+    return prefs.getInt(_unlockedLessonKey) ?? 1;
+  }
+
+  static Future<void> saveUnlockedLesson(int lessonIndex) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_unlockedLessonKey, lessonIndex);
+  }
+
   // == MÉTODOS DE PRUEBA (DEBUG) ==
   
   // Simula que la última lección fue "ayer" para poder ganar racha "hoy" de nuevo.
@@ -173,5 +201,12 @@ class PrefsHelper {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_streakCountKey);
     await prefs.remove(_lastLessonDateKey);
+  }
+
+  // Reinicia por completo el nivel de las lecciones (a 1) y recarga las vidas (a 3).
+  static Future<void> debugResetLessonsProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_unlockedLessonKey, 1);
+    await prefs.setInt(_globalLivesKey, 3);
   }
 }

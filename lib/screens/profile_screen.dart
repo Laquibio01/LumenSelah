@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../helpers/streak_helper.dart';
 
 class ProfileScreen extends StatelessWidget {
   final ThemeMode themeMode;
@@ -73,6 +74,24 @@ class ProfileScreen extends StatelessWidget {
               value: ThemeMode.system,
               groupValue: themeMode,
               onChanged: onThemeModeChanged,
+            ),
+            const SizedBox(height: 32),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.bug_report, color: Colors.red),
+              title: Text('Debug: Reiniciar Lecciones', style: GoogleFonts.montserrat(color: Colors.red, fontWeight: FontWeight.bold)),
+              subtitle: Text('Restaura las vidas a 3 y el nivel a 1', style: GoogleFonts.montserrat(color: textColor.withOpacity(0.5))),
+              onTap: () async {
+                await PrefsHelper.debugResetLessonsProgress();
+                if (context.mounted) {
+                   ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Progreso reiniciado correctamente', style: GoogleFonts.montserrat()),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
             ),
           ],
         ),

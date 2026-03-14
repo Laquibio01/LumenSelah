@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../helpers/database_helper.dart';
 import '../services/streak_service.dart';
+import '../helpers/streak_helper.dart';
+import 'lesson_quiz_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -12,6 +14,22 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   // Colores ahora se obtienen del tema
+  int _unlockedLesson = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final unlocked = await PrefsHelper.getUnlockedLesson();
+    if (mounted) {
+      setState(() {
+        _unlockedLesson = unlocked;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,17 +111,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () async {
                       // Debugging - Tap the flame to simulate "Yesterday" (modified to reset for compatibility)
                       await StreakService().resetStreak();
+                      await PrefsHelper.debugResetLessonsProgress();
+                      _loadData();
                       setState(() {});
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Simulado: Racha reiniciada')));
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Depuración: Racha y lecciones reiniciadas')));
                       }
                     },
                     onLongPress: () async {
                       // Debugging - Long press to reset streak entirely
                       await StreakService().resetStreak();
+                      await PrefsHelper.debugResetLessonsProgress();
+                      _loadData();
                       setState(() {});
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Racha reiniciada a 0')));
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Depuración: Racha y lecciones reiniciadas a 0')));
                       }
                     },
                     child: Row(
@@ -264,6 +286,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildDynamicNode(int id, String title, ColorScheme colorScheme, Color textColor) {
+    bool isCompleted = id < _unlockedLesson;
+    bool isCurrent = id == _unlockedLesson;
+    return _buildNode(title, isCompleted: isCompleted, isCurrent: isCurrent, colorScheme: colorScheme, textColor: textColor);
+  }
+
   Widget _buildPathMap(BuildContext context, ThemeData theme, ColorScheme colorScheme, Color textColor) {
     Color lineColor = colorScheme.secondary.withOpacity(0.5);
     return Column(
@@ -271,9 +299,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildNode('Genesis 1', isCompleted: true, colorScheme: colorScheme, textColor: textColor),
+            _buildDynamicNode(1, 'Genesis 1', colorScheme, textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildNode('Genesis 2', isCompleted: true, colorScheme: colorScheme, textColor: textColor),
+            _buildDynamicNode(2, 'Genesis 2', colorScheme, textColor),
           ],
         ),
         Transform.translate(
@@ -283,9 +311,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildNode('Genesis 4', isCompleted: false, colorScheme: colorScheme, textColor: textColor),
+            _buildDynamicNode(4, 'Genesis 4', colorScheme, textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildNode('Genesis 3', isCurrent: true, colorScheme: colorScheme, textColor: textColor), // Zig-zag
+            _buildDynamicNode(3, 'Genesis 3', colorScheme, textColor), // Zig-zag
           ],
         ),
         Transform.translate(
@@ -295,9 +323,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildNode('Genesis 5', isCompleted: false, colorScheme: colorScheme, textColor: textColor),
+            _buildDynamicNode(5, 'Genesis 5', colorScheme, textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildNode('Genesis 6', isCompleted: false, colorScheme: colorScheme, textColor: textColor),
+            _buildDynamicNode(6, 'Genesis 6', colorScheme, textColor),
           ],
         ),
         const SizedBox(height: 48),
@@ -367,16 +395,19 @@ class _HomeScreenState extends State<HomeScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     return ElevatedButton(
       onPressed: () async {
-        await StreakService().checkAndUpdateStreak(); 
-        setState(() {}); // Recarga la interfaz entera incluyendo el FutureBuilder de racha
-        
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Lección completada', style: GoogleFonts.montserrat()),
-              backgroundColor: colorScheme.secondary,
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LessonQuizScreen(
+              lessonId: _unlockedLesson,
+              accentColor: colorScheme.primary,
             ),
-          );
+          ),
+        );
+        
+        if (result == true) {
+          _loadData();
+          setState(() {}); // Recarga la interfaz incluyendo el FutureBuilder de racha
         }
       },
       style: ElevatedButton.styleFrom(
