@@ -84,6 +84,18 @@ class DatabaseHelper {
     return {'streak_days': 0, 'verses_read': 0, 'app_time_minutes': 0};
   }
 
+  // Incrementa el tiempo de la app en minutos para un usuario
+  static Future<void> incrementAppTime(String username, int minutesToAdd) async {
+    final user = await getUser(username);
+    if (user != null) {
+      final db = await getDatabase();
+      await db.rawUpdate(
+        'UPDATE user_stats SET app_time_minutes = app_time_minutes + ? WHERE user_id = ?',
+        [minutesToAdd, user['id']]
+      );
+    }
+  }
+
   // Obtiene un usuario por nombre de usuario
   static Future<Map<String, dynamic>?> getUser(String username) async {
     final db = await getDatabase();

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
+import '../helpers/database_helper.dart';
 
 import 'home_screen.dart';
 import 'bible_reader_screen.dart';
@@ -19,10 +21,48 @@ class MainNavigation extends StatefulWidget {
   State<MainNavigation> createState() => _MainNavigationState();
 }
 
-class _MainNavigationState extends State<MainNavigation> {
+class _MainNavigationState extends State<MainNavigation> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   bool _isBottomBarVisible = true;
   Key _lessonsTabKey = UniqueKey();
+  Key _profileTabKey = UniqueKey();
+
+  Timer? _appTimer;
+  bool _isForeground = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _appTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _isForeground = true;
+      _startTimer();
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      _isForeground = false;
+      _appTimer?.cancel();
+    }
+  }
+
+  void _startTimer() {
+    _appTimer?.cancel();
+    _appTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (_isForeground && widget.sessionUser != null && widget.sessionUser != 'Usuario') {
+        DatabaseHelper.incrementAppTime(widget.sessionUser!, 1);
+      }
+    });
+  }
 
   List<Widget> get _pages => [
     const HomeScreen(),
@@ -35,6 +75,7 @@ class _MainNavigationState extends State<MainNavigation> {
     ),
     LessonsTabScreen(key: _lessonsTabKey),
     ProfileScreen(
+      key: _profileTabKey,
       themeMode: widget.themeMode,
       onThemeModeChanged: widget.onThemeModeChanged,
       onLogout: widget.onLogout,
@@ -47,6 +88,9 @@ class _MainNavigationState extends State<MainNavigation> {
       if (index == 2 && _selectedIndex != 2) {
         // Regenerate key to force reload when switching to the lessons tab
         _lessonsTabKey = UniqueKey();
+      } else if (index == 3 && _selectedIndex != 3) {
+        // Regenerate key to force reload when switching to the profile tab
+        _profileTabKey = UniqueKey();
       }
       _selectedIndex = index;
     });

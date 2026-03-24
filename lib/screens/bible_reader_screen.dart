@@ -8,8 +8,9 @@ import 'bible_search_screen.dart';
 
 class BibleReaderScreen extends StatefulWidget {
   final Function(bool isVisible)? onScrollVisibilityChanged;
+  final int? initialScrollToVerse;
 
-  const BibleReaderScreen({Key? key, this.onScrollVisibilityChanged}) : super(key: key);
+  const BibleReaderScreen({Key? key, this.onScrollVisibilityChanged, this.initialScrollToVerse}) : super(key: key);
 
   @override
   State<BibleReaderScreen> createState() => _BibleReaderScreenState();
@@ -44,6 +45,9 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialScrollToVerse != null) {
+      _highlightVerse = widget.initialScrollToVerse;
+    }
     _loadInitialData();
     
     _scrollController.addListener(() {
@@ -442,6 +446,17 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
             ),
           ),
           actions: [
+            if (existingNote.isNotEmpty)
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _verseNotes.remove(key);
+                  });
+                  PrefsHelper.saveVerseNotes(_verseNotes);
+                  Navigator.pop(context);
+                },
+                child: Text('Borrar', style: GoogleFonts.montserrat(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              ),
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text('Cancelar', style: GoogleFonts.montserrat(color: Colors.grey)),

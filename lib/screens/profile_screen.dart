@@ -4,12 +4,14 @@ import '../helpers/streak_helper.dart';
 
 import '../helpers/database_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'bible_reader_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode?> onThemeModeChanged;
   final VoidCallback onLogout;
   final String? sessionUser;
+  final ValueChanged<int>? onNavigateToVerse;
 
   const ProfileScreen({
     Key? key,
@@ -17,6 +19,7 @@ class ProfileScreen extends StatefulWidget {
     required this.onThemeModeChanged,
     required this.onLogout,
     required this.sessionUser,
+    this.onNavigateToVerse,
   }) : super(key: key);
 
   @override
@@ -26,7 +29,6 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   late String _currentUsername;
   int _streakDays = 0;
-  int _versesRead = 0;
   int _appTimeMinutes = 0;
 
   @override
@@ -43,8 +45,90 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final stats = await DatabaseHelper.getUserStats(user['id'] as int);
       setState(() {
         _streakDays = stats['streak_days'] as int? ?? 0;
-        _versesRead = stats['verses_read'] as int? ?? 0;
         _appTimeMinutes = stats['app_time_minutes'] as int? ?? 0;
+      });
+    }
+  }
+
+  // --- NUEVAS VARIABLES DE ESTADO PARA VERSÍCULOS ---
+  List<Verse> _favoriteVerses = [];
+  Map<Verse, String> _notedVerses = {};
+  Map<Verse, int> _highlightedVerses = {};
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadVersesData(); // Recarga si se navega de regreso a este tab
+  }
+
+  Future<void> _loadVersesData() async {
+    // 1. Favoritos
+    List<String> favKeys = await PrefsHelper.getFavoriteVerses();
+    List<Verse> fetchedFavs = [];
+    for (String key in favKeys) {
+      Verse? v = await _fetchVerseByKey(key);
+      if (v != null) fetchedFavs.add(v);
+    }
+
+    // 2. Notas
+    Map<String, String> noteKeys = await PrefsHelper.getVerseNotes();
+    Map<Verse, String> fetchedNotes = {};
+    for (var entry in noteKeys.entries) {
+      if (entry.value.trim().isNotEmpty) {
+        Verse? v = await _fetchVerseByKey(entry.key);
+        if (v != null) fetchedNotes[v] = entry.value;
+      }
+    }
+
+    // 3. Subrayados
+    Map<String, int> hlKeys = await PrefsHelper.getHighlightedVerses();
+    Map<Verse, int> fetchedHl = {};
+    for (var entry in hlKeys.entries) {
+      Verse? v = await _fetchVerseByKey(entry.key);
+      if (v != null) fetchedHl[v] = entry.value;
+    }
+
+    if (mounted) {
+      setState(() {
+        _favoriteVerses = fetchedFavs;
+        _notedVerses = fetchedNotes;
+        _highlightedVerses = fetchedHl;
+      });
+    }
+  }
+
+  Future<Verse?> _fetchVerseByKey(String key) async {
+    // el key es "bookId_chapter_verse"
+    final parts = key.split('_');
+    if (parts.length == 3) {
+      int? b = int.tryParse(parts[0]);
+      int? c = int.tryParse(parts[1]);
+      int? v = int.tryParse(parts[2]);
+      if (b != null && c != null && v != null) {
+        return await DatabaseHelper.getVerse(b, c, v);
+      }
+    }
+    return null;
+  }
+
+  void _navigateToVerse(Verse verse) async {
+    // Guarda la posición actual para que el Reader abra ahí
+    await PrefsHelper.saveLastBiblePosition(verse.bookId, verse.chapter);
+    if (!mounted) return;
+    
+    if (widget.onNavigateToVerse != null) {
+      widget.onNavigateToVerse!(verse.verse);
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BibleReaderScreen(
+            initialScrollToVerse: verse.verse,
+          ),
+        ),
+      ).then((_) {
+        // Al volver, refrescamos los datos por si quitó algún favorito o subrayado
+        _loadVersesData();
       });
     }
   }
@@ -250,11 +334,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Expanded(child: _buildStatCard(context, Icons.local_fire_department, 'Días de racha', '$_streakDays', Colors.orange)),
                 const SizedBox(width: 16),
-                Expanded(child: _buildStatCard(context, Icons.menu_book, 'Versículos', '$_versesRead', Colors.blue)),
+                Expanded(child: _buildStatCard(context, Icons.timer, 'Tiempo en la app', _formatAppTime(_appTimeMinutes), Colors.green)),
               ],
             ),
             const SizedBox(height: 16),
-            _buildStatCard(context, Icons.timer, 'Tiempo en la app', _formatAppTime(_appTimeMinutes), Colors.green, fullWidth: true),
+            _buildStatCard(context, Icons.collections_bookmark, 'Favs., Notas y Subrayados', '${_favoriteVerses.length + _highlightedVerses.length + _notedVerses.length}', Colors.blue, fullWidth: true),
+
+            const SizedBox(height: 32),
+
+            // Mis Versículos
+            Text('Mis Versículos', style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+            const SizedBox(height: 16),
+            Card(
+              elevation: 0,
+              color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Column(
+                children: [
+                  Theme(
+                    data: theme.copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.favorite, color: Colors.redAccent),
+                      title: Text('Favoritos (${_favoriteVerses.length})', style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+                      children: _favoriteVerses.map((v) => _buildVerseListTile(v, null, null)).toList(),
+                    ),
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  Theme(
+                    data: theme.copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      leading: Icon(Icons.border_color, color: theme.colorScheme.primary),
+                      title: Text('Subrayados (${_highlightedVerses.length})', style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+                      children: _highlightedVerses.entries.map((e) => _buildVerseListTile(e.key, e.value, null)).toList(),
+                    ),
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  Theme(
+                    data: theme.copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.sticky_note_2, color: Colors.orange),
+                      title: Text('Mis Notas (${_notedVerses.length})', style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+                      children: _notedVerses.entries.map((e) => _buildVerseListTile(e.key, null, e.value)).toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
             const SizedBox(height: 32),
             
@@ -357,6 +482,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
       ),
+    );
+  }
+
+  Widget _buildVerseListTile(Verse verse, int? highlightColorValue, String? note) {
+    final theme = Theme.of(context);
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      title: Text(
+        '${verse.bookName} ${verse.chapter}:${verse.verse}',
+        style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: theme.colorScheme.onBackground),
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 4),
+          Text(
+            verse.text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.merriweather(
+              fontStyle: FontStyle.italic,
+              color: highlightColorValue != null ? Color(highlightColorValue) : theme.colorScheme.onBackground.withOpacity(0.8),
+            ),
+          ),
+          if (note != null && note.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.format_quote, size: 16, color: theme.colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      note,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.montserrat(fontSize: 12, color: theme.colorScheme.onBackground.withOpacity(0.9)),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          ]
+        ],
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => _navigateToVerse(verse),
     );
   }
 }
