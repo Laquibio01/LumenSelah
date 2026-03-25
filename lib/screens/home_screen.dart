@@ -3,10 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../helpers/database_helper.dart';
 import '../services/streak_service.dart';
 import '../helpers/streak_helper.dart';
+import '../data/lessons_data.dart';
 import 'lesson_quiz_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -35,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textColor = colorScheme.onBackground;
+    final textColor = colorScheme.onSurface;
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -86,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -206,8 +207,8 @@ class _HomeScreenState extends State<HomeScreen> {
           height: 36,
           decoration: BoxDecoration(
             color: isChecked 
-                ? colorScheme.primary.withOpacity(0.15) 
-                : (isToday ? Colors.grey.withOpacity(0.25) : Colors.grey.withOpacity(0.1)),
+                ? colorScheme.primary.withValues(alpha: 0.15) 
+                : (isToday ? Colors.grey.withValues(alpha: 0.25) : Colors.grey.withValues(alpha: 0.1)),
             shape: BoxShape.circle,
             border: Border.all(
               color: isChecked 
@@ -248,10 +249,10 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.secondary.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: colorScheme.secondary.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -296,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     '${verse.bookName} ${verse.chapter}:${verse.verse}',
                     style: GoogleFonts.montserrat(
-                      color: textColor.withOpacity(0.6),
+                      color: textColor.withValues(alpha: 0.6),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -310,22 +311,23 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDynamicNode(int id, String title, ThemeData theme, ColorScheme colorScheme, Color textColor) {
+  Widget _buildDynamicNode(int id, ThemeData theme, ColorScheme colorScheme, Color textColor) {
     bool isCompleted = id < _unlockedLesson;
     bool isCurrent = id == _unlockedLesson;
+    String title = lessonsDatabase[id]?.title ?? 'Lección $id';
     return _buildNode(title, isCompleted: isCompleted, isCurrent: isCurrent, theme: theme, colorScheme: colorScheme, textColor: textColor);
   }
 
   Widget _buildPathMap(BuildContext context, ThemeData theme, ColorScheme colorScheme, Color textColor) {
-    Color lineColor = colorScheme.secondary.withOpacity(0.5);
+    Color lineColor = colorScheme.secondary.withValues(alpha: 0.5);
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildDynamicNode(1, 'Genesis 1', theme, colorScheme, textColor),
+            _buildDynamicNode(1, theme, colorScheme, textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildDynamicNode(2, 'Genesis 2', theme, colorScheme, textColor),
+            _buildDynamicNode(2, theme, colorScheme, textColor),
           ],
         ),
         Transform.translate(
@@ -335,9 +337,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildDynamicNode(4, 'Genesis 4', theme, colorScheme, textColor),
+            _buildDynamicNode(4, theme, colorScheme, textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildDynamicNode(3, 'Genesis 3', theme, colorScheme, textColor), // Zig-zag
+            _buildDynamicNode(3, theme, colorScheme, textColor), // Zig-zag
           ],
         ),
         Transform.translate(
@@ -347,9 +349,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildDynamicNode(5, 'Genesis 5', theme, colorScheme, textColor),
+            _buildDynamicNode(5, theme, colorScheme, textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildDynamicNode(6, 'Genesis 6', theme, colorScheme, textColor),
+            _buildDynamicNode(6, theme, colorScheme, textColor),
           ],
         ),
         const SizedBox(height: 48),
@@ -361,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildNode(String title, {bool isCompleted = false, bool isCurrent = false, required ThemeData theme, required ColorScheme colorScheme, required Color textColor}) {
     bool isDark = theme.brightness == Brightness.dark;
     Color bgColor = isCompleted ? colorScheme.secondary : (isDark ? theme.cardColor : Colors.white);
-    Color borderColor = isCompleted ? colorScheme.secondary : colorScheme.secondary.withOpacity(0.5);
+    Color borderColor = isCompleted ? colorScheme.secondary : colorScheme.secondary.withValues(alpha: 0.5);
     Color textColorItem = isCurrent ? Colors.white : (isCompleted ? Colors.white : textColor);
 
     BoxDecoration decor = BoxDecoration(
@@ -369,20 +371,20 @@ class _HomeScreenState extends State<HomeScreen> {
       borderRadius: BorderRadius.circular(20),
       border: Border.all(color: borderColor, width: 2),
       boxShadow: [
-        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 4)),
+        BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 4)),
       ]
     );
 
     if (isCurrent) {
       decor = BoxDecoration(
         gradient: LinearGradient(
-          colors: [colorScheme.primary.withOpacity(0.85), colorScheme.primary],
+          colors: [colorScheme.primary.withValues(alpha: 0.85), colorScheme.primary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: colorScheme.primary.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4)),
+          BoxShadow(color: colorScheme.primary.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 4)),
         ]
       );
     }

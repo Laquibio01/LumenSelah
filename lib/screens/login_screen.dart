@@ -6,7 +6,7 @@ import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final void Function(String username) onLoginSuccess;
-  const LoginScreen({Key? key, required this.onLoginSuccess}) : super(key: key);
+  const LoginScreen({super.key, required this.onLoginSuccess});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -56,7 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textColor = theme.colorScheme.onBackground;
     return Scaffold(
       appBar: AppBar(
         title: Text('Iniciar sesión', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),

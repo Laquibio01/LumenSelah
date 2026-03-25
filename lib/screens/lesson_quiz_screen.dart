@@ -2,50 +2,56 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../helpers/streak_helper.dart';
 import '../services/streak_service.dart';
+import '../data/lessons_data.dart';
 
 class LessonQuizScreen extends StatefulWidget {
   final int lessonId;
   final Color accentColor;
 
   const LessonQuizScreen({
-    Key? key,
+    super.key,
     required this.lessonId,
     required this.accentColor,
-  }) : super(key: key);
+  });
 
   @override
   State<LessonQuizScreen> createState() => _LessonQuizScreenState();
 }
 
 class _LessonQuizScreenState extends State<LessonQuizScreen> {
-  final int _totalQuestions = 10;
   int _currentQuestionIndex = 0;
   int _localAttempts = 3;
-
-  // Datos simulados del cuestionario (Placeholders)
-  final List<Map<String, dynamic>> _questions = List.generate(10, (index) => {
-    'question': 'Pregunta de prueba #${index + 1} para la lección',
-    'options': ['Opción Correcta', 'Opción Incorrecta A', 'Opción Incorrecta B'],
-    'correctIndex': 0, // Siempre la A por ahora para testing
-  });
+  bool _showReadingArea = true;
+  LessonData? _lessonData;
+  
+  // State for answer highlighting
+  bool _isAnswered = false;
+  int? _selectedIdx;
 
   @override
   void initState() {
     super.initState();
-    // En un escenario real aquí mezclaríamos las opciones
+    _lessonData = lessonsDatabase[widget.lessonId];
+    if (_lessonData == null || _lessonData!.questions.isEmpty) {
+      _showReadingArea = false;
+    }
   }
 
-  void _handleAnswer(int selectedIndex, int correctIndex) async {
+  int get _totalQuestions => _lessonData?.questions.length ?? 10;
+
+  Future<void> _handleAnswer(int selectedIndex, int correctIndex, String hint) async {
+    if (_isAnswered) return; // Prevent multiple clicks
+    
+    setState(() {
+      _isAnswered = true;
+      _selectedIdx = selectedIndex;
+    });
+
     if (selectedIndex == correctIndex) {
-      // Respuesta Correcta
-      if (_currentQuestionIndex < _totalQuestions - 1) {
-        setState(() {
-          _currentQuestionIndex++;
-        });
-      } else {
-        // Terminó la lección con éxito!
-        await _handleLessonSuccess();
-      }
+      // Respuesta Correcta: esperar un poco y avanzar
+      await Future.delayed(const Duration(milliseconds: 1000));
+      if (!mounted) return;
+      await _advanceQuestion();
     } else {
       // Respuesta Incorrecta
       setState(() {
@@ -53,17 +59,83 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
       });
 
       if (_localAttempts <= 0) {
-        // Pierde la lección y resta una vida global
+        // Pierde la lección
         await _handleLessonFailure();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Respuesta incorrecta. Te quedan $_localAttempts intentos (⚡).', style: GoogleFonts.montserrat()),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 2),
+        // Muestra la pista (hint)
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+            title: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                const SizedBox(width: 8),
+                Text('Incorrecto', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: Colors.orange)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Te quedan $_localAttempts intentos (⚡).', style: GoogleFonts.montserrat(color: isDark ? Colors.white : Colors.black87)),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.lightbulb_outline, color: Colors.orange, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Pista: $hint',
+                          style: GoogleFonts.montserrat(
+                            fontStyle: FontStyle.italic, 
+                            color: isDark ? Colors.orange[200] : Colors.brown[800],
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Entendido', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: widget.accentColor)),
+              ),
+            ],
           ),
         );
+        
+        // Al cerrar el diálogo (con Entendido), avanzamos independientemente si fue fallida
+        if (mounted) {
+          await _advanceQuestion();
+        }
       }
+    }
+  }
+  
+  Future<void> _advanceQuestion() async {
+    if (_currentQuestionIndex < _totalQuestions - 1) {
+      setState(() {
+        _isAnswered = false;
+        _selectedIdx = null;
+        _currentQuestionIndex++;
+      });
+    } else {
+      // Terminó la lección con éxito o habiendo completado todo
+      await _handleLessonSuccess();
     }
   }
 
@@ -101,12 +173,10 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
   Future<void> _handleLessonSuccess() async {
     final int currentUnlocked = await PrefsHelper.getUnlockedLesson();
     
-    // Si acaba de pasar la lección más alta que tenía, desbloquea la siguiente (max 10)
     if (widget.lessonId == currentUnlocked && currentUnlocked < 10) {
       await PrefsHelper.saveUnlockedLesson(currentUnlocked + 1);
     }
 
-    // Actualiza la racha si es completada
     await StreakService().checkAndUpdateStreak();
 
     if (!mounted) return;
@@ -115,8 +185,14 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: Text('¡Felicidades!', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: widget.accentColor)),
-        content: Text('Has completado la lección ${widget.lessonId} con éxito.', style: GoogleFonts.montserrat()),
+        title: Column(
+          children: [
+            const Icon(Icons.menu_book, color: Colors.amber, size: 56),
+            const SizedBox(height: 16),
+            Text('¡Felicidades!', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: widget.accentColor)),
+          ],
+        ),
+        content: Text('Has completado la lección:\n"${_lessonData?.title ?? ''}"\ncon éxito.', style: GoogleFonts.montserrat(), textAlign: TextAlign.center),
         actions: [
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -134,13 +210,262 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
     );
   }
 
+  Widget _buildReadingArea(Color bgColor, Color textColor) {
+    if (_lessonData == null) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  _lessonData!.title,
+                  style: GoogleFonts.merriweather(
+                    color: widget.accentColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 28,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Biblical Text Section
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: widget.accentColor.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: widget.accentColor.withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.menu_book, color: widget.accentColor, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            _lessonData!.biblicalReference,
+                            style: GoogleFonts.montserrat(
+                              color: widget.accentColor,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _lessonData!.biblicalText,
+                        style: GoogleFonts.merriweather(
+                          color: textColor,
+                          fontSize: 18,
+                          height: 1.6,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 32),
+                
+                // Explanation Section
+                Text(
+                  'Explicación Breve',
+                  style: GoogleFonts.montserrat(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _lessonData!.explanation,
+                  style: GoogleFonts.montserrat(
+                    color: textColor.withValues(alpha: 0.9),
+                    fontSize: 16,
+                    height: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        // Begin Quiz Button pinned to the bottom
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24.0),
+          decoration: BoxDecoration(
+            color: bgColor,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                offset: const Offset(0, -4),
+                blurRadius: 10,
+              ),
+            ],
+          ),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.accentColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 4,
+            ),
+            onPressed: () {
+              setState(() {
+                _showReadingArea = false;
+              });
+            },
+            child: Text(
+              'Comenzar Examen',
+              style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuizArea(Color bgColor, Color textColor) {
+    if (_lessonData == null) {
+      return Center(
+        child: Text('No hay datos para esta lección.', style: GoogleFonts.montserrat(color: textColor)),
+      );
+    }
+
+    final currentQ = _lessonData!.questions[_currentQuestionIndex];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 20),
+          Text(
+            'Pregunta ${_currentQuestionIndex + 1} de $_totalQuestions',
+            style: GoogleFonts.montserrat(
+              color: widget.accentColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            currentQ.question,
+            style: GoogleFonts.merriweather(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 48),
+          
+          ...List.generate(currentQ.options.length, (index) {
+            final String optionText = currentQ.options[index];
+            
+            // Dynamic styling based on answer state
+            Color optBgColor = isDark ? Theme.of(context).cardColor : Colors.white;
+            Color optOutlineColor = Colors.grey.withValues(alpha: 0.2);
+            Color optTextColor = textColor;
+            double elevation = 2;
+            
+            if (_isAnswered) {
+              if (index == _selectedIdx && index == currentQ.correctIndex) {
+                // Correct selected answer is Green
+                optBgColor = Colors.green;
+                optOutlineColor = Colors.green;
+                optTextColor = Colors.white;
+                elevation = 4;
+              } else if (index == _selectedIdx && index != currentQ.correctIndex) {
+                // Wrong selected answer is Red
+                optBgColor = Colors.redAccent;
+                optOutlineColor = Colors.redAccent;
+                optTextColor = Colors.white;
+                elevation = 4;
+              } else {
+                // Other options greyed out slightly
+                optTextColor = textColor.withValues(alpha: 0.5);
+              }
+            }
+
+            final bool isSelected = _isAnswered && index == _selectedIdx;
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: AnimatedScale(
+                scale: isSelected ? 1.02 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.bounceOut,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  decoration: BoxDecoration(
+                    color: optBgColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: optOutlineColor, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        offset: const Offset(0, 2),
+                        blurRadius: elevation * 2,
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => _handleAnswer(index, currentQ.correctIndex, currentQ.hint),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                optionText, 
+                                style: GoogleFonts.montserrat(
+                                  color: optTextColor,
+                                  fontSize: 16, 
+                                  fontWeight: FontWeight.w500
+                                ),
+                              ),
+                            ),
+                            if (isSelected && index == currentQ.correctIndex)
+                              const Icon(Icons.check_circle, color: Colors.white),
+                            if (isSelected && index != currentQ.correctIndex)
+                              const Icon(Icons.cancel, color: Colors.white),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final double progress = (_currentQuestionIndex) / _totalQuestions;
-    final currentQ = _questions[_currentQuestionIndex];
+    final double progress = _showReadingArea 
+        ? 0.0 
+        : (_currentQuestionIndex) / _totalQuestions;
+        
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
     final Color bgColor = isDark ? theme.scaffoldBackgroundColor : const Color(0xFFFDFCF8);
     final Color textColor = isDark ? Colors.white : const Color(0xFF2F4F4F);
 
@@ -161,7 +486,7 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 12,
-                  backgroundColor: Colors.grey.withOpacity(0.2),
+                  backgroundColor: Colors.grey.withValues(alpha: 0.2),
                   valueColor: AlwaysStoppedAnimation<Color>(widget.accentColor),
                 ),
               ),
@@ -180,58 +505,9 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
-              Text(
-                'Pregunta ${_currentQuestionIndex + 1} de $_totalQuestions',
-                style: GoogleFonts.montserrat(
-                  color: widget.accentColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                currentQ['question'],
-                style: GoogleFonts.merriweather(
-                  color: textColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 48),
-              
-              ...List.generate(currentQ['options'].length, (index) {
-                final String optionText = currentQ['options'][index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: textColor,
-                      backgroundColor: isDark ? theme.cardColor : Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                      textStyle: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w500),
-                      elevation: 2,
-                      shadowColor: Colors.black12,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1.5),
-                      ),
-                      alignment: Alignment.centerLeft,
-                    ),
-                    onPressed: () => _handleAnswer(index, currentQ['correctIndex']),
-                    child: Text(optionText),
-                  ),
-                );
-              }),
-            ],
-          ),
-        ),
+        child: _showReadingArea 
+          ? _buildReadingArea(bgColor, textColor)
+          : _buildQuizArea(bgColor, textColor),
       ),
     );
   }

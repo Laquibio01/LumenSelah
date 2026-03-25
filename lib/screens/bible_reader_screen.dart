@@ -10,7 +10,7 @@ class BibleReaderScreen extends StatefulWidget {
   final Function(bool isVisible)? onScrollVisibilityChanged;
   final int? initialScrollToVerse;
 
-  const BibleReaderScreen({Key? key, this.onScrollVisibilityChanged, this.initialScrollToVerse}) : super(key: key);
+  const BibleReaderScreen({super.key, this.onScrollVisibilityChanged, this.initialScrollToVerse});
 
   @override
   State<BibleReaderScreen> createState() => _BibleReaderScreenState();
@@ -37,7 +37,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   double _fontSize = 18.0;
   double _lineHeight = 1.6;
   
-  String _searchQuery = ''; // Usada solo para mantener resaltada la palabra tras venir de la búsqueda global
+  final String _searchQuery = ''; // Usada solo para mantener resaltada la palabra tras venir de la búsqueda global
   
   final ScrollController _scrollController = ScrollController();
   List<Map<String, dynamic>> _allBooks = [];
@@ -341,7 +341,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                   final color = c['color'] as Color;
                   return GestureDetector(
                     onTap: () {
-                      _setHighlight(verseNum, color.value);
+                      _setHighlight(verseNum, color.toARGB32());
                       Navigator.pop(context);
                     },
                     child: Container(
@@ -352,7 +352,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.black12, width: 2),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))
                         ],
                       ),
                     ),
@@ -503,7 +503,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final bgColor = theme.scaffoldBackgroundColor;
-    final textColor = colorScheme.onBackground;
+    final textColor = colorScheme.onSurface;
     final accentColor = colorScheme.primary;
     final secondaryColor = colorScheme.secondary;
     return Scaffold(
@@ -522,12 +522,12 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.search),
-                      color: textColor.withOpacity(0.7),
+                      color: textColor.withValues(alpha: 0.7),
                       onPressed: _openBibleSearch,
                     ),
                     IconButton(
                       icon: const Icon(Icons.text_format),
-                      color: textColor.withOpacity(0.7),
+                      color: textColor.withValues(alpha: 0.7),
                       onPressed: _showReadingSettings,
                     ),
                   ],
@@ -585,7 +585,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               final bool isPermanentlyHighlighted = _highlightedVerses.containsKey(hKey);
               final double opacity = Theme.of(context).brightness == Brightness.dark ? 0.35 : 0.6;
               final Color permanentColor = isPermanentlyHighlighted 
-                  ? Color(_highlightedVerses[hKey]!).withOpacity(opacity) 
+                  ? Color(_highlightedVerses[hKey]!).withValues(alpha: opacity) 
                   : Colors.transparent;
 
               final bool isFavorite = _favoriteVerses.contains(hKey);
@@ -598,7 +598,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                   duration: const Duration(seconds: 3), // Fade out duration más largo y notorio
                   curve: Curves.easeOut,
                   tween: ColorTween(
-                    begin: isTemporaryHighlighted ? accentColor.withOpacity(0.5) : permanentColor,
+                    begin: isTemporaryHighlighted ? accentColor.withValues(alpha: 0.5) : permanentColor,
                     end: permanentColor,
                   ),
                   builder: (context, color, child) {
@@ -615,7 +615,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                   child: _buildParagraph('${v.verse} ${v.text}', textColor, isFavorite: isFavorite, hasNote: hasNote, searchQuery: _searchQuery),
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -628,7 +628,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
       color: theme.brightness == Brightness.dark ? const Color(0xFF23262E) : Colors.white,
       borderRadius: BorderRadius.circular(28),
       elevation: 6,
-      shadowColor: Colors.black.withOpacity(0.3),
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       child: Container(
         height: 56,
         decoration: BoxDecoration(
@@ -642,14 +642,14 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               IconButton(
                 onPressed: _currentChapter > 1 ? () => _navigateChapter(-1) : null,
                 icon: const Icon(Icons.chevron_left, size: 28),
-                color: _currentChapter > 1 ? secondaryColor : Colors.grey.withOpacity(0.3),
+                color: _currentChapter > 1 ? secondaryColor : Colors.grey.withValues(alpha: 0.3),
               ),
               Expanded(
                 child: InkWell(
                   onTap: _openBibleIndex,
                   borderRadius: BorderRadius.circular(16),
-                  highlightColor: accentColor.withOpacity(0.1),
-                  splashColor: accentColor.withOpacity(0.2),
+                  highlightColor: accentColor.withValues(alpha: 0.1),
+                  splashColor: accentColor.withValues(alpha: 0.2),
                   child: Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -669,7 +669,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               IconButton(
                 onPressed: _currentChapter < _maxChapters ? () => _navigateChapter(1) : null,
                 icon: const Icon(Icons.chevron_right, size: 28),
-                color: _currentChapter < _maxChapters ? secondaryColor : Colors.grey.withOpacity(0.3),
+                color: _currentChapter < _maxChapters ? secondaryColor : Colors.grey.withValues(alpha: 0.3),
               ),
             ],
           ),
@@ -691,7 +691,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         badges.add(const WidgetSpan(
           alignment: PlaceholderAlignment.middle,
           child: Padding(
-            padding: const EdgeInsets.only(left: 6.0, right: 2.0),
+            padding: EdgeInsets.only(left: 6.0, right: 2.0),
             child: Icon(Icons.favorite, color: Colors.redAccent, size: 16),
           ),
         ));
@@ -700,7 +700,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         badges.add(const WidgetSpan(
           alignment: PlaceholderAlignment.middle,
           child: Padding(
-            padding: const EdgeInsets.only(left: 6.0, right: 2.0),
+            padding: EdgeInsets.only(left: 6.0, right: 2.0),
             child: Icon(Icons.sticky_note_2, color: Colors.amber, size: 16),
           ),
         ));
@@ -708,7 +708,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
       return badges;
     }
 
-    List<InlineSpan> _highlightKeyword(String rawText, String keyword, Color textColor) {
+    List<InlineSpan> highlightKeyword(String rawText, String keyword, Color textColor) {
       if (keyword.isEmpty) {
         return [
           TextSpan(
@@ -760,7 +760,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
           style: GoogleFonts.merriweather(
             fontSize: _fontSize,
             color: Colors.black87, 
-            backgroundColor: Colors.yellowAccent.withOpacity(0.8), 
+            backgroundColor: Colors.yellowAccent.withValues(alpha: 0.8), 
             fontWeight: FontWeight.bold,
             height: _lineHeight,
             letterSpacing: 0.2,
@@ -780,7 +780,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         text: TextSpan(
           children: [
             TextSpan(
-              text: number + ' ',
+              text: '$number ',
               style: GoogleFonts.montserrat(
                 fontSize: _fontSize,
                 fontWeight: FontWeight.bold,
@@ -788,7 +788,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                 height: _lineHeight,
               ),
             ),
-            ..._highlightKeyword(rest, searchQuery, textColor),
+            ...highlightKeyword(rest, searchQuery, textColor),
             ...getBadges(),
           ],
         ),
@@ -798,7 +798,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     return RichText(
       text: TextSpan(
         children: [
-          ..._highlightKeyword(cleanText, searchQuery, textColor),
+          ...highlightKeyword(cleanText, searchQuery, textColor),
           ...getBadges(),
         ]
       )

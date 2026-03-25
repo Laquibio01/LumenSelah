@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'main_navigation.dart';
 
 
 typedef SplashFinishCallback = void Function();
 
 class SplashScreen extends StatefulWidget {
   final SplashFinishCallback? onFinish;
-  const SplashScreen({Key? key, this.onFinish}) : super(key: key);
+  const SplashScreen({super.key, this.onFinish});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();

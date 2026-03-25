@@ -1,4 +1,5 @@
-import 'dart:io';
+// ignore_for_file: avoid_print
+// No dart:io
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() async {
@@ -12,7 +13,7 @@ void main() async {
   var tables = await db.rawQuery("SELECT name FROM sqlite_master WHERE type='table';");
   print("--- TABLAS ---");
   for (var t in tables) {
-    print(t['name']);
+    print(t['name']?.toString() ?? '');
   }
 
   // Describir cada tabla si no son muchas, o la primera si hay muchas
@@ -26,7 +27,7 @@ void main() async {
       
       print("\n--- EJEMPLO DE DATOS DE $firstTable ---");
       var data = await db.query(firstTable, limit: 1);
-      print(data);
+      print(data.toString());
   }
 
   await db.close();

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import '../helpers/database_helper.dart';
@@ -15,7 +14,7 @@ class MainNavigation extends StatefulWidget {
   final ValueChanged<ThemeMode?> onThemeModeChanged;
   final VoidCallback onLogout;
   final String? sessionUser;
-  const MainNavigation({Key? key, required this.themeMode, required this.onThemeModeChanged, required this.onLogout, required this.sessionUser}) : super(key: key);
+  const MainNavigation({super.key, required this.themeMode, required this.onThemeModeChanged, required this.onLogout, required this.sessionUser});
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -99,10 +98,7 @@ class _MainNavigationState extends State<MainNavigation> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final bgColor = theme.scaffoldBackgroundColor;
-    final textColor = colorScheme.onBackground;
-    final accentColor = colorScheme.primary;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: widget.themeMode == ThemeMode.dark
           ? SystemUiOverlayStyle.light
@@ -129,14 +125,14 @@ class _MainNavigationState extends State<MainNavigation> with WidgetsBindingObse
                   border: Border(
                     top: BorderSide(
                       color: theme.brightness == Brightness.dark
-                          ? Colors.white.withOpacity(0.10)
-                          : Colors.black.withOpacity(0.08),
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : Colors.black.withValues(alpha: 0.08),
                       width: 1.5,
                     ),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       offset: const Offset(0, -2),
                       blurRadius: 10,
                     ),
@@ -168,7 +164,7 @@ class _MainNavigationState extends State<MainNavigation> with WidgetsBindingObse
     final bool isSelected = _selectedIndex == index;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textColor = colorScheme.onBackground;
+    final textColor = colorScheme.onSurface;
     final accentColor = colorScheme.primary;
     // Si es la pestaña actual y está marcada como 'accent' (como el libro en el mockup)
     // o simplemente para resaltar el ítem seleccionado.
@@ -189,7 +185,7 @@ class _MainNavigationState extends State<MainNavigation> with WidgetsBindingObse
 
     return IconButton(
       icon: Icon(icon),
-      color: isSelected ? accentColor : textColor.withOpacity(0.6),
+      color: isSelected ? accentColor : textColor.withValues(alpha: 0.6),
       iconSize: 28,
       onPressed: () => _onItemTapped(index),
     );

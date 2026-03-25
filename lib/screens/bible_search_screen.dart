@@ -6,7 +6,7 @@ import '../helpers/streak_helper.dart';
 class BibleSearchScreen extends StatefulWidget {
   final Function(int bookId, int chapter, int verse) onVerseSelected;
 
-  const BibleSearchScreen({Key? key, required this.onVerseSelected}) : super(key: key);
+  const BibleSearchScreen({super.key, required this.onVerseSelected});
 
   @override
   State<BibleSearchScreen> createState() => _BibleSearchScreenState();
@@ -139,7 +139,7 @@ class _BibleSearchScreenState extends State<BibleSearchScreen> {
         style: GoogleFonts.merriweather(
           fontSize: _fontSize,
           color: Colors.black87,
-          backgroundColor: Colors.yellowAccent.withOpacity(0.8),
+          backgroundColor: Colors.yellowAccent.withValues(alpha: 0.8),
           fontWeight: FontWeight.bold,
           height: _lineHeight,
           letterSpacing: 0.2,
@@ -156,7 +156,7 @@ class _BibleSearchScreenState extends State<BibleSearchScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final bgColor = theme.scaffoldBackgroundColor;
-    final textColor = colorScheme.onBackground;
+    final textColor = colorScheme.onSurface;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -168,7 +168,7 @@ class _BibleSearchScreenState extends State<BibleSearchScreen> {
           style: TextStyle(color: textColor),
           decoration: InputDecoration(
             hintText: 'Buscar en toda la Biblia...',
-            hintStyle: TextStyle(color: textColor.withOpacity(0.5)),
+            hintStyle: TextStyle(color: textColor.withValues(alpha: 0.5)),
             border: InputBorder.none,
             suffixIcon: IconButton(
               icon: Icon(Icons.search, color: textColor),
@@ -202,7 +202,7 @@ class _BibleSearchScreenState extends State<BibleSearchScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
                         decoration: BoxDecoration(
-                          border: Border(bottom: BorderSide(color: textColor.withOpacity(0.1))),
+                          border: Border(bottom: BorderSide(color: textColor.withValues(alpha: 0.1))),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

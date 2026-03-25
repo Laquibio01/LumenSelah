@@ -9,11 +9,11 @@ class BibleIndexChaptersScreen extends StatefulWidget {
   final Function(int bookId, int chapter, int verse) onVerseSelected;
 
   const BibleIndexChaptersScreen({
-    Key? key,
+    super.key,
     required this.bookId,
     required this.bookName,
     required this.onVerseSelected,
-  }) : super(key: key);
+  });
 
   @override
   State<BibleIndexChaptersScreen> createState() => _BibleIndexChaptersScreenState();
@@ -25,10 +25,10 @@ class BibleIndexBooksScreen extends StatefulWidget {
   final Function(int bookId, int chapter, int verse) onVerseSelected;
 
   const BibleIndexBooksScreen({
-    Key? key,
+    super.key,
     required this.books,
     required this.onVerseSelected,
-  }) : super(key: key);
+  });
 
   @override
   State<BibleIndexBooksScreen> createState() => _BibleIndexBooksScreenState();
@@ -45,7 +45,7 @@ class _BibleIndexBooksScreenState extends State<BibleIndexBooksScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final bgColor = theme.scaffoldBackgroundColor;
-    final textColor = colorScheme.onBackground;
+    final textColor = colorScheme.onSurface;
     final greenAccent = colorScheme.secondary;
     return DefaultTabController(
       length: 2,
@@ -62,7 +62,7 @@ class _BibleIndexBooksScreenState extends State<BibleIndexBooksScreen> {
           ),
           bottom: TabBar(
             labelColor: greenAccent,
-            unselectedLabelColor: textColor.withOpacity(0.5),
+            unselectedLabelColor: textColor.withValues(alpha: 0.5),
             indicatorColor: greenAccent,
             tabs: const [
               Tab(text: 'Antiguo Test. (AT)'),
@@ -85,7 +85,7 @@ class _BibleIndexBooksScreenState extends State<BibleIndexBooksScreen> {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: bookList.length,
-      separatorBuilder: (context, index) => Divider(color: theme.dividerColor.withOpacity(0.2), height: 1),
+      separatorBuilder: (context, index) => Divider(color: theme.dividerColor.withValues(alpha: 0.2), height: 1),
       itemBuilder: (context, index) {
         final book = bookList[index];
         return ListTile(
@@ -93,7 +93,7 @@ class _BibleIndexBooksScreenState extends State<BibleIndexBooksScreen> {
             book['name'],
             style: GoogleFonts.montserrat(color: textColor, fontSize: 16, fontWeight: FontWeight.w600),
           ),
-          trailing: Icon(Icons.chevron_right, color: theme.iconTheme.color?.withOpacity(0.7) ?? Colors.grey),
+          trailing: Icon(Icons.chevron_right, color: theme.iconTheme.color?.withValues(alpha: 0.7) ?? Colors.grey),
           onTap: () {
             Navigator.push(
               context,
@@ -136,7 +136,7 @@ class _BibleIndexChaptersScreenState extends State<BibleIndexChaptersScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final bgColor = theme.scaffoldBackgroundColor;
-    final textColor = colorScheme.onBackground;
+    final textColor = colorScheme.onSurface;
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
@@ -163,7 +163,7 @@ class _BibleIndexChaptersScreenState extends State<BibleIndexChaptersScreen> {
                 final chapter = index + 1;
                 final theme = Theme.of(context);
                 final colorScheme = theme.colorScheme;
-                final textColor = colorScheme.onBackground;
+                final textColor = colorScheme.onSurface;
                 return InkWell(
                   onTap: () {
                     Navigator.push(
@@ -183,11 +183,11 @@ class _BibleIndexChaptersScreenState extends State<BibleIndexChaptersScreen> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: theme.brightness == Brightness.dark ? colorScheme.surface : Colors.white,
-                      border: Border.all(color: theme.dividerColor.withOpacity(0.3)),
+                      border: Border.all(color: theme.dividerColor.withValues(alpha: 0.3)),
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
+                          color: Colors.black.withValues(alpha: 0.02),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -214,12 +214,12 @@ class BibleIndexVersesScreen extends StatefulWidget {
   final Function(int bookId, int chapter, int verse) onVerseSelected;
 
   const BibleIndexVersesScreen({
-    Key? key,
+    super.key,
     required this.bookId,
     required this.bookName,
     required this.chapter,
     required this.onVerseSelected,
-  }) : super(key: key);
+  });
 
   @override
   State<BibleIndexVersesScreen> createState() => _BibleIndexVersesScreenState();
@@ -252,8 +252,8 @@ class _BibleIndexVersesScreenState extends State<BibleIndexVersesScreen> {
     final colorScheme = theme.colorScheme;
     final bgColor = theme.scaffoldBackgroundColor;
     final cardColor = theme.cardColor;
-    final borderColor = theme.dividerColor.withOpacity(0.3);
-    final textColor = colorScheme.onBackground;
+    final borderColor = theme.dividerColor.withValues(alpha: 0.3);
+    final textColor = colorScheme.onSurface;
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(

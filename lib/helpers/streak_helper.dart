@@ -163,16 +163,76 @@ class PrefsHelper {
     await prefs.setDouble(_lineHeightKey, height);
   }
 
+  static const String _lastLifeRegenTimeKey = 'lastLifeRegenTime';
+  static const int maxLives = 5;
+  static const int minutesPerLife = 5;
+
   // == LECCIONES Y VIDAS ==
 
-  static Future<int> getGlobalLives() async {
+  // Calcula y restaura vidas según el tiempo
+  static Future<Map<String, dynamic>> checkAndRegenLives() async {
     final prefs = await SharedPreferences.getInstance();
-    // 3 vidas por defecto
-    return prefs.getInt(_globalLivesKey) ?? 3;
+    int currentLives = prefs.getInt(_globalLivesKey) ?? maxLives;
+    String? lastRegenStr = prefs.getString(_lastLifeRegenTimeKey);
+
+    if (currentLives >= maxLives) {
+      if (lastRegenStr != null) {
+        await prefs.remove(_lastLifeRegenTimeKey);
+      }
+      return {'lives': maxLives, 'remainingSeconds': 0};
+    }
+
+    if (lastRegenStr == null) {
+      lastRegenStr = DateTime.now().toIso8601String();
+      await prefs.setString(_lastLifeRegenTimeKey, lastRegenStr);
+    }
+
+    DateTime lastRegen = DateTime.parse(lastRegenStr);
+    DateTime now = DateTime.now();
+    Duration difference = now.difference(lastRegen);
+
+    int secondsPassed = difference.inSeconds;
+    int secondsPerLife = minutesPerLife * 60;
+
+    if (secondsPassed >= secondsPerLife) {
+      int livesToRecover = secondsPassed ~/ secondsPerLife;
+      currentLives += livesToRecover;
+      
+      if (currentLives >= maxLives) {
+        currentLives = maxLives;
+        await prefs.remove(_lastLifeRegenTimeKey);
+        await prefs.setInt(_globalLivesKey, currentLives);
+        return {'lives': currentLives, 'remainingSeconds': 0};
+      } else {
+        int remainderSeconds = secondsPassed % secondsPerLife;
+        // Avanzamos el reloj de regeneración
+        DateTime newRegenTime = now.subtract(Duration(seconds: remainderSeconds));
+        await prefs.setString(_lastLifeRegenTimeKey, newRegenTime.toIso8601String());
+        await prefs.setInt(_globalLivesKey, currentLives);
+        return {'lives': currentLives, 'remainingSeconds': secondsPerLife - remainderSeconds};
+      }
+    } else {
+      return {'lives': currentLives, 'remainingSeconds': secondsPerLife - secondsPassed};
+    }
+  }
+
+  static Future<int> getGlobalLives() async {
+    final res = await checkAndRegenLives();
+    return res['lives'] as int;
   }
 
   static Future<void> saveGlobalLives(int lives) async {
     final prefs = await SharedPreferences.getInstance();
+    int current = prefs.getInt(_globalLivesKey) ?? maxLives;
+    
+    // Asegurarse de no pasar el máximo
+    if (lives > maxLives) lives = maxLives;
+    
+    // Si gastamos una vida estando al máximo, iniciamos el cronómetro
+    if (lives < current && current == maxLives) {
+       await prefs.setString(_lastLifeRegenTimeKey, DateTime.now().toIso8601String());
+    }
+    
     await prefs.setInt(_globalLivesKey, lives);
   }
 

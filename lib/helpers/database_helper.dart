@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -146,7 +145,7 @@ class DatabaseHelper {
       // Si usas un asset pre-empaquetado lo podemos abrir "en memoria":
       
       // Leemos buffer 
-      ByteData data = await rootBundle.load(join("assets", "db", "rvr1960.sqlite"));
+      await rootBundle.load(join("assets", "db", "rvr1960.sqlite"));
       // List<int> bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
       
       return await factory.openDatabase(
@@ -179,7 +178,7 @@ class DatabaseHelper {
 
       ByteData data = await rootBundle.load(join("assets", "db", "rvr1960.sqlite"));
       List<int> bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-      print("Escribiendo base de datos a memoria en: $path");
+      debugPrint("Escribiendo base de datos a memoria en: $path");
       await File(path).writeAsBytes(bytes, flush: true);
     } 
 

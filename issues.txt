@@ -1,0 +1,41 @@
+﻿Analyzing LumenSelah...                                         
+
+   info - Don't invoke 'print' in production code - fix_deprecations.dart:52:7 - avoid_print
+   info - Don't invoke 'print' in production code - fix_syntax.dart:20:7 - avoid_print
+   info - Use interpolation to compose strings and values - fix_unused.dart:26:23 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code - fix_unused.dart:34:7 - avoid_print
+   info - The import of 'package:sqflite/sqflite.dart' is unnecessary because all of the used elements are also provided by the import of 'package:sqflite_common_ffi/sqflite_ffi.dart' - lib\helpers\database_helper.dart:5:8 - unnecessary_import
+warning - Unused import: 'dart:io' - lib\helpers\test_db.dart:2:8 - unused_import
+  error - The argument type 'Object?' can't be assigned to the parameter type 'String?'.  - lib\helpers\test_db.dart:16:16 - argument_type_not_assignable
+  error - The argument type 'List<Map<String, Object?>>' can't be assigned to the parameter type 'String?'.  - lib\helpers\test_db.dart:30:18 - argument_type_not_assignable
+   info - Parameter 'key' could be a super parameter - lib\screens\bible_index_modal.dart:8:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\screens\bible_index_screen.dart:11:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\screens\bible_index_screen.dart:27:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\screens\bible_index_screen.dart:216:9 - use_super_parameters
+   info - The private field _searchQuery could be 'final' - lib\screens\bible_reader_screen.dart:40:10 - prefer_final_fields
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\screens\bible_reader_screen.dart:344:53 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\screens\bible_reader_screen.dart:618:16 - unnecessary_to_list_in_spreads
+   info - Unnecessary 'const' keyword - lib\screens\bible_reader_screen.dart:694:22 - unnecessary_const
+   info - Unnecessary 'const' keyword - lib\screens\bible_reader_screen.dart:703:22 - unnecessary_const
+   info - The local variable '_highlightKeyword' starts with an underscore - lib\screens\bible_reader_screen.dart:711:22 - no_leading_underscores_for_local_identifiers
+   info - Use interpolation to compose strings and values - lib\screens\bible_reader_screen.dart:783:21 - prefer_interpolation_to_compose_strings
+   info - Parameter 'key' could be a super parameter - lib\screens\lesson_quiz_screen.dart:11:9 - use_super_parameters
+warning - The value of the local variable 'textColor' isn't used - lib\screens\login_screen.dart:59:11 - unused_local_variable
+warning - The value of the local variable 'textColor' isn't used - lib\screens\main_navigation.dart:103:11 - unused_local_variable
+warning - The value of the local variable 'accentColor' isn't used - lib\screens\main_navigation.dart:104:11 - unused_local_variable
+   info - Parameter 'key' could be a super parameter - lib\screens\profile_screen.dart:16:9 - use_super_parameters
+   info - The local variable '_formKey' starts with an underscore - lib\screens\profile_screen.dart:144:11 - no_leading_underscores_for_local_identifiers
+   info - The local variable '_usernameController' starts with an underscore - lib\screens\profile_screen.dart:145:11 - no_leading_underscores_for_local_identifiers
+   info - The local variable '_passwordController' starts with an underscore - lib\screens\profile_screen.dart:146:11 - no_leading_underscores_for_local_identifiers
+   info - The local variable '_isLoading' starts with an underscore - lib\screens\profile_screen.dart:147:10 - no_leading_underscores_for_local_identifiers
+   info - The local variable '_errorMessage' starts with an underscore - lib\screens\profile_screen.dart:148:13 - no_leading_underscores_for_local_identifiers
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\screens\profile_screen.dart:398:21 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\screens\profile_screen.dart:399:21 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\screens\profile_screen.dart:406:21 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\screens\profile_screen.dart:407:21 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\screens\profile_screen.dart:414:21 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\screens\profile_screen.dart:415:21 - deprecated_member_use
+   info - Constructors in '@immutable' classes should be declared as 'const' - lib\screens\register_screen.dart:8:5 - prefer_const_constructors_in_immutables
+warning - The value of the local variable 'textColor' isn't used - lib\screens\register_screen.dart:49:11 - unused_local_variable
+warning - Unused import: 'main_navigation.dart' - lib\screens\splash_screen.dart:3:8 - unused_import
+

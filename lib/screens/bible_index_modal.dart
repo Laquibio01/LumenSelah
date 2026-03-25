@@ -6,10 +6,10 @@ class BibleIndexModal extends StatelessWidget {
   final Function(int bookId) onBookSelected;
 
   const BibleIndexModal({
-    Key? key,
+    super.key,
     required this.books,
     required this.onBookSelected,
-  }) : super(key: key);
+  });
 
   // Los colores ahora se obtienen del tema
 
@@ -22,7 +22,7 @@ class BibleIndexModal extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final bgColor = theme.scaffoldBackgroundColor;
-    final textColor = colorScheme.onBackground;
+    final textColor = colorScheme.onSurface;
     final greenAccent = colorScheme.secondary;
     return DefaultTabController(
       length: 2,
@@ -39,7 +39,7 @@ class BibleIndexModal extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: theme.dividerColor.withOpacity(0.3),
+                color: theme.dividerColor.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -55,7 +55,7 @@ class BibleIndexModal extends StatelessWidget {
             const SizedBox(height: 16),
             TabBar(
               labelColor: greenAccent,
-              unselectedLabelColor: textColor.withOpacity(0.5),
+              unselectedLabelColor: textColor.withValues(alpha: 0.5),
               indicatorColor: greenAccent,
               tabs: const [
                 Tab(text: 'Antiguo Testamento'),
@@ -81,7 +81,7 @@ class BibleIndexModal extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: bookList.length,
-      separatorBuilder: (context, index) => Divider(color: theme.dividerColor.withOpacity(0.2), height: 1),
+      separatorBuilder: (context, index) => Divider(color: theme.dividerColor.withValues(alpha: 0.2), height: 1),
       itemBuilder: (context, index) {
         final book = bookList[index];
         return ListTile(

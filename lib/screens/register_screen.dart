@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
   class RegisterScreen extends StatefulWidget {
     final void Function(String username)? onRegisterSuccess;
-    RegisterScreen({Key? key, this.onRegisterSuccess}) : super(key: key);
+    const RegisterScreen({super.key, this.onRegisterSuccess});
 
     @override
     State<RegisterScreen> createState() => _RegisterScreenState();
@@ -46,7 +46,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textColor = theme.colorScheme.onBackground;
     return Scaffold(
       appBar: AppBar(
         title: Text('Registro', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),

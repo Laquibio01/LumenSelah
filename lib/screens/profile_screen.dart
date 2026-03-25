@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../helpers/streak_helper.dart';
@@ -14,13 +15,13 @@ class ProfileScreen extends StatefulWidget {
   final ValueChanged<int>? onNavigateToVerse;
 
   const ProfileScreen({
-    Key? key,
+    super.key,
     required this.themeMode,
     required this.onThemeModeChanged,
     required this.onLogout,
     required this.sessionUser,
     this.onNavigateToVerse,
-  }) : super(key: key);
+  });
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -141,11 +142,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showEditProfileDialog(BuildContext context) {
-    final _formKey = GlobalKey<FormState>();
-    final _usernameController = TextEditingController(text: _currentUsername);
-    final _passwordController = TextEditingController();
-    bool _isLoading = false;
-    String? _errorMessage;
+    final formKey = GlobalKey<FormState>();
+    final usernameController = TextEditingController(text: _currentUsername);
+    final passwordController = TextEditingController();
+    bool isLoading = false;
+    String? errorMessage;
 
     showDialog(
       context: context,
@@ -155,25 +156,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return AlertDialog(
               title: Text('Editar Perfil', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
               content: Form(
-                key: _formKey,
+                key: formKey,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TextFormField(
-                        controller: _usernameController,
+                        controller: usernameController,
                         decoration: const InputDecoration(labelText: 'Nuevo Usuario', prefixIcon: Icon(Icons.person)),
                         validator: (value) => value == null || value.trim().isEmpty ? 'El nombre no puede estar vacío' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
-                        controller: _passwordController,
+                        controller: passwordController,
                         decoration: const InputDecoration(labelText: 'Nueva Contraseña (Opcional)', prefixIcon: Icon(Icons.lock)),
                         obscureText: true,
                       ),
-                      if (_errorMessage != null) ...[
+                      if (errorMessage != null) ...[
                         const SizedBox(height: 16),
-                        Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+                        Text(errorMessage!, style: const TextStyle(color: Colors.red)),
                       ],
                     ],
                   ),
@@ -185,21 +186,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: const Text('Cancelar'),
                 ),
                 ElevatedButton(
-                  onPressed: _isLoading
+                  onPressed: isLoading
                       ? null
                       : () async {
-                          if (_formKey.currentState!.validate()) {
+                          if (formKey.currentState!.validate()) {
                             setStateDialog(() {
-                              _isLoading = true;
-                              _errorMessage = null;
+                              isLoading = true;
+                              errorMessage = null;
                             });
 
-                            final newUsername = _usernameController.text.trim();
+                            final newUsername = usernameController.text.trim();
                             // Si la contraseña está en blanco, mantenemos la anterior (requerirá lógica en el Helper o simplemente aquí)
                             // Para simplificar, asumiremos que obligamos a meter una contraseña, o buscaremos la actual.
                             
                             // Buscar usuario actual para sacar la contraseña si la dejan en blanco
-                            String newPassword = _passwordController.text;
+                            String newPassword = passwordController.text;
                             if (newPassword.isEmpty) {
                                final currentUserData = await DatabaseHelper.getUser(_currentUsername);
                                if (currentUserData != null) {
@@ -224,13 +225,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               }
                             } else {
                               setStateDialog(() {
-                                _isLoading = false;
-                                _errorMessage = 'El nombre de usuario ya existe o hubo un error al actualizar.';
+                                isLoading = false;
+                                errorMessage = 'El nombre de usuario ya existe o hubo un error al actualizar.';
                               });
                             }
                           }
                         },
-                  child: _isLoading 
+                  child: isLoading 
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
                       : const Text('Guardar'),
                 ),
@@ -245,7 +246,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textColor = theme.colorScheme.onBackground;
+    final textColor = theme.colorScheme.onSurface;
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -268,7 +269,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       CircleAvatar(
                         radius: 56,
-                        backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
+                        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
                         child: Text(
                           _currentUsername.isNotEmpty ? _currentUsername[0].toUpperCase() : 'U',
                           style: GoogleFonts.montserrat(fontSize: 48, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)
@@ -317,7 +318,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     label: const Text('Cerrar sesión'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
-                      side: BorderSide(color: theme.colorScheme.error.withOpacity(0.5)),
+                      side: BorderSide(color: theme.colorScheme.error.withValues(alpha: 0.5)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
@@ -347,7 +348,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 16),
             Card(
               elevation: 0,
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
@@ -388,7 +389,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 16),
             Card(
               elevation: 0,
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
@@ -423,7 +424,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ListTile(
               leading: const Icon(Icons.bug_report, color: Colors.red),
               title: Text('Debug: Reiniciar Lecciones', style: GoogleFonts.montserrat(color: Colors.red, fontWeight: FontWeight.bold)),
-              subtitle: Text('Restaura las vidas a 3 y el nivel a 1', style: GoogleFonts.montserrat(color: textColor.withOpacity(0.5))),
+              subtitle: Text('Restaura las vidas a 3 y el nivel a 1', style: GoogleFonts.montserrat(color: textColor.withValues(alpha: 0.5))),
               onTap: () async {
                 await PrefsHelper.debugResetLessonsProgress();
                 if (context.mounted) {
@@ -446,10 +447,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final theme = Theme.of(context);
     return Card(
       elevation: 0,
-      color: color.withOpacity(0.1),
+      color: color.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: color.withOpacity(0.2)),
+        side: BorderSide(color: color.withValues(alpha: 0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -458,15 +459,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: color.withOpacity(0.2), shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: color.withValues(alpha: 0.2), shape: BoxShape.circle),
                   child: Icon(icon, color: color, size: 28),
                 ),
                 const SizedBox(width: 16),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(value, style: GoogleFonts.montserrat(fontSize: 24, fontWeight: FontWeight.bold, color: theme.colorScheme.onBackground)),
-                    Text(title, style: TextStyle(color: theme.colorScheme.onBackground.withOpacity(0.7), fontSize: 14)),
+                    Text(value, style: GoogleFonts.montserrat(fontSize: 24, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+                    Text(title, style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 14)),
                   ],
                 ),
               ],
@@ -476,9 +477,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Icon(icon, color: color, size: 28),
                 const SizedBox(height: 12),
-                Text(value, style: GoogleFonts.montserrat(fontSize: 24, fontWeight: FontWeight.bold, color: theme.colorScheme.onBackground)),
+                Text(value, style: GoogleFonts.montserrat(fontSize: 24, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
                 const SizedBox(height: 4),
-                Text(title, style: TextStyle(color: theme.colorScheme.onBackground.withOpacity(0.7), fontSize: 14)),
+                Text(title, style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 14)),
               ],
             ),
       ),
@@ -491,7 +492,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       title: Text(
         '${verse.bookName} ${verse.chapter}:${verse.verse}',
-        style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: theme.colorScheme.onBackground),
+        style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -503,7 +504,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.merriweather(
               fontStyle: FontStyle.italic,
-              color: highlightColorValue != null ? Color(highlightColorValue) : theme.colorScheme.onBackground.withOpacity(0.8),
+              color: highlightColorValue != null ? Color(highlightColorValue) : theme.colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
           if (note != null && note.isNotEmpty) ...[
@@ -511,9 +512,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.1),
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
+                border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -524,7 +525,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       note,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.montserrat(fontSize: 12, color: theme.colorScheme.onBackground.withOpacity(0.9)),
+                      style: GoogleFonts.montserrat(fontSize: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.9)),
                     ),
                   ),
                 ],

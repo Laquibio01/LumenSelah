@@ -10,14 +10,12 @@ class AppThemes {
       bodyLarge: TextStyle(color: Color(0xFF222222)),
       bodyMedium: TextStyle(color: Color(0xFF222222)),
     ),
-    colorScheme: ColorScheme.light(
+    colorScheme: const ColorScheme.light(
       primary: Colors.amber,
-      secondary: const Color(0xFFB6E2B6),
-      background: Color(0xFFF7F5EF),
+      secondary: Color(0xFFB6E2B6),
       surface: Colors.white,
       onPrimary: Colors.white,
       onSecondary: Colors.black,
-      onBackground: Color(0xFF222222),
       onSurface: Color(0xFF222222),
       error: Colors.red,
     ),
@@ -32,14 +30,12 @@ class AppThemes {
       bodyLarge: TextStyle(color: Colors.white),
       bodyMedium: TextStyle(color: Colors.white),
     ),
-    colorScheme: ColorScheme.dark(
+    colorScheme: const ColorScheme.dark(
       primary: Colors.amber,
-      secondary: const Color(0xFF6FCF97),
-      background: Color(0xFF262C36),
+      secondary: Color(0xFF6FCF97),
       surface: Color(0xFF323846),
       onPrimary: Colors.black,
       onSecondary: Colors.white,
-      onBackground: Colors.white,
       onSurface: Colors.white,
       error: Colors.redAccent,
     ),
