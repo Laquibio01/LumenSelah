@@ -4,16 +4,16 @@ import '../helpers/database_helper.dart';
 import '../services/streak_service.dart';
 import '../helpers/streak_helper.dart';
 import '../data/lessons_data.dart';
-import 'lesson_quiz_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onStartLesson;
+  const HomeScreen({super.key, this.onStartLesson});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   // Colores ahora se obtienen del tema
   int _unlockedLesson = 1;
 
@@ -21,6 +21,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  Future<void> reloadData() async {
+    await _loadData();
   }
 
   Future<void> _loadData() async {
@@ -311,35 +315,45 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Color _getCategoryColor(int id) {
+    if (id <= 10) return Colors.blue;
+    if (id <= 20) return Colors.green;
+    if (id <= 30) return Colors.orange;
+    return Colors.purple;
+  }
+
   Widget _buildDynamicNode(int id, ThemeData theme, ColorScheme colorScheme, Color textColor) {
     bool isCompleted = id < _unlockedLesson;
     bool isCurrent = id == _unlockedLesson;
     String title = lessonsDatabase[id]?.title ?? 'Lección $id';
-    return _buildNode(title, isCompleted: isCompleted, isCurrent: isCurrent, theme: theme, colorScheme: colorScheme, textColor: textColor);
+    Color catColor = _getCategoryColor(id);
+    return _buildNode(title, isCompleted: isCompleted, isCurrent: isCurrent, theme: theme, catColor: catColor, textColor: textColor);
   }
 
   Widget _buildPathMap(BuildContext context, ThemeData theme, ColorScheme colorScheme, Color textColor) {
     Color lineColor = colorScheme.secondary.withValues(alpha: 0.5);
+    int startId = _unlockedLesson <= 4 ? 1 : _unlockedLesson - 1;
+    
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildDynamicNode(1, theme, colorScheme, textColor),
+            _buildDynamicNode(startId, theme, colorScheme, textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildDynamicNode(2, theme, colorScheme, textColor),
+            _buildDynamicNode(startId + 1, theme, colorScheme, textColor),
           ],
         ),
         Transform.translate(
-          offset: const Offset(70, 0), // Centro del nodo derecho (25 espacio medio + 45 mitigad del nodo)
+          offset: const Offset(70, 0), // Centro del nodo derecho
           child: Container(width: 4, height: 40, color: lineColor),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildDynamicNode(4, theme, colorScheme, textColor),
+            _buildDynamicNode(startId + 3, theme, colorScheme, textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildDynamicNode(3, theme, colorScheme, textColor), // Zig-zag
+            _buildDynamicNode(startId + 2, theme, colorScheme, textColor), // Zig-zag
           ],
         ),
         Transform.translate(
@@ -349,9 +363,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildDynamicNode(5, theme, colorScheme, textColor),
+            _buildDynamicNode(startId + 4, theme, colorScheme, textColor),
             Container(width: 50, height: 4, color: lineColor),
-            _buildDynamicNode(6, theme, colorScheme, textColor),
+            _buildDynamicNode(startId + 5, theme, colorScheme, textColor),
           ],
         ),
         const SizedBox(height: 48),
@@ -360,10 +374,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNode(String title, {bool isCompleted = false, bool isCurrent = false, required ThemeData theme, required ColorScheme colorScheme, required Color textColor}) {
+  Widget _buildNode(String title, {bool isCompleted = false, bool isCurrent = false, required ThemeData theme, required Color catColor, required Color textColor}) {
     bool isDark = theme.brightness == Brightness.dark;
-    Color bgColor = isCompleted ? colorScheme.secondary : (isDark ? theme.cardColor : Colors.white);
-    Color borderColor = isCompleted ? colorScheme.secondary : colorScheme.secondary.withValues(alpha: 0.5);
+    Color bgColor = isCompleted ? catColor : (isDark ? theme.cardColor : Colors.white);
+    Color borderColor = isCompleted ? catColor : catColor.withValues(alpha: 0.5);
     Color textColorItem = isCurrent ? Colors.white : (isCompleted ? Colors.white : textColor);
 
     BoxDecoration decor = BoxDecoration(
@@ -377,14 +391,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (isCurrent) {
       decor = BoxDecoration(
-        gradient: LinearGradient(
-          colors: [colorScheme.primary.withValues(alpha: 0.85), colorScheme.primary],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: catColor,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: catColor, width: 2),
         boxShadow: [
-          BoxShadow(color: colorScheme.primary.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 4)),
+          BoxShadow(color: catColor.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 4)),
         ]
       );
     }
@@ -412,12 +423,18 @@ class _HomeScreenState extends State<HomeScreen> {
             size: 28,
           ),
           const SizedBox(height: 8),
-          Text(
-            title,
-            style: GoogleFonts.montserrat(
-              color: textColorItem,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.montserrat(
+                color: textColorItem,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -426,26 +443,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildStartLessonButton(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    Color buttonColor = _getCategoryColor(_unlockedLesson);
+    
     return ElevatedButton(
-      onPressed: () async {
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => LessonQuizScreen(
-              lessonId: _unlockedLesson,
-              accentColor: colorScheme.primary,
-            ),
-          ),
-        );
-        
-        if (result == true) {
-          _loadData();
-          setState(() {}); // Recarga la interfaz incluyendo el FutureBuilder de racha
+      onPressed: () {
+        if (widget.onStartLesson != null) {
+          widget.onStartLesson!();
         }
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: colorScheme.primary,
+        backgroundColor: buttonColor,
         foregroundColor: Colors.white,
         elevation: 3,
         padding: const EdgeInsets.symmetric(vertical: 18),

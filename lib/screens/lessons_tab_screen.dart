@@ -4,19 +4,20 @@ import 'package:google_fonts/google_fonts.dart';
 import '../helpers/streak_helper.dart';
 import '../data/lessons_data.dart';
 import 'lesson_quiz_screen.dart';
+import '../helpers/audio_helper.dart';
 
 class LessonsTabScreen extends StatefulWidget {
   const LessonsTabScreen({super.key});
 
   @override
-  State<LessonsTabScreen> createState() => _LessonsTabScreenState();
+  State<LessonsTabScreen> createState() => LessonsTabScreenState();
 }
 
-class _LessonsTabScreenState extends State<LessonsTabScreen> {
+class LessonsTabScreenState extends State<LessonsTabScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   int _globalLives = 5;
   int _unlockedLesson = 1;
   int _remainingSeconds = 0;
-  bool _isLoading = true;
   Timer? _timer;
 
   @override
@@ -24,12 +25,36 @@ class _LessonsTabScreenState extends State<LessonsTabScreen> {
     super.initState();
     _loadProgress();
     _startTimer();
+    _tabController = TabController(length: 4, vsync: this, initialIndex: _getInitialTabIndex());
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> reloadProgress() async {
+    await _loadProgress();
+  }
+
+  void startCurrentLesson() {
+    final title = lessonsDatabase[_unlockedLesson]?.title ?? 'Lección $_unlockedLesson';
+    _showLessonStartDialog(_unlockedLesson, _getCategoryColor(_unlockedLesson), title, false);
+  }
+
+  Color _getCategoryColor(int id) {
+    if (id <= 10) {
+      return Colors.blue;
+    }
+    if (id <= 20) {
+      return Colors.green;
+    }
+    if (id <= 30) {
+      return Colors.orange;
+    }
+    return Colors.purple;
   }
 
   Future<void> _loadProgress() async {
@@ -40,7 +65,6 @@ class _LessonsTabScreenState extends State<LessonsTabScreen> {
       _globalLives = res['lives'];
       _remainingSeconds = res['remainingSeconds'];
       _unlockedLesson = unlocked;
-      _isLoading = false;
     });
   }
 
@@ -67,15 +91,8 @@ class _LessonsTabScreenState extends State<LessonsTabScreen> {
   }
 
   void _openQuiz(int lessonId, Color difficultyColor) async {
-    if (_globalLives <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No tienes vidas (❤️). Espera $_formattedTimer o descansa.', style: GoogleFonts.montserrat()),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
+    // Las vidas ya fueron verificadas en _showLessonStartDialog
+    int oldUnlocked = _unlockedLesson;
 
     final bool? result = await Navigator.push(
       context,
@@ -88,30 +105,91 @@ class _LessonsTabScreenState extends State<LessonsTabScreen> {
     );
 
     if (result != null) {
-      _loadProgress();
+      await _loadProgress();
+      
+      if (oldUnlocked == 10 && _unlockedLesson == 11) {
+         _showCategoryCompleteModal(10);
+      } else if (oldUnlocked == 20 && _unlockedLesson == 21) {
+         _showCategoryCompleteModal(20);
+      } else if (oldUnlocked == 30 && _unlockedLesson == 31) {
+         _showCategoryCompleteModal(30);
+      }
     }
   }
 
+  void _showCategoryCompleteModal(int categoryEndLessonId) {
+    AudioHelper.playCategoryComplete();
+
+    String categoryName = "";
+    Color catColor = Colors.blue;
+    if (categoryEndLessonId == 10) { categoryName = "Fácil"; catColor = Colors.blue; }
+    else if (categoryEndLessonId == 20) { categoryName = "Normal"; catColor = Colors.green; }
+    else if (categoryEndLessonId == 30) { categoryName = "Difícil"; catColor = Colors.orange; }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Column(
+            children: [
+              const Icon(Icons.emoji_events, color: Colors.amber, size: 60),
+              const SizedBox(height: 16),
+              Text('¡Categoría Completada!', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: catColor), textAlign: TextAlign.center),
+            ],
+          ),
+          content: Text(
+            '¡Felicidades! Has superado todas las lecciones de la dificultad $categoryName.\n\nPrepárate para la siguiente etapa de tu viaje.',
+            style: GoogleFonts.montserrat(),
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: catColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              onPressed: () {
+                Navigator.pop(dialogContext); // Cierra dialog
+                int nextTab = 0;
+                if (categoryEndLessonId == 10) nextTab = 1;
+                else if (categoryEndLessonId == 20) nextTab = 2;
+                else if (categoryEndLessonId == 30) nextTab = 3;
+                
+                _tabController.animateTo(nextTab);
+              },
+              child: Text('¡Vamos a la siguiente!', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   int _getInitialTabIndex() {
-    if (_unlockedLesson <= 10) return 0;
-    if (_unlockedLesson <= 20) return 1;
-    if (_unlockedLesson <= 30) return 2;
+    if (_unlockedLesson <= 10) {
+      return 0;
+    }
+    if (_unlockedLesson <= 20) {
+      return 1;
+    }
+    if (_unlockedLesson <= 30) {
+      return 2;
+    }
     return 3;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
-    return DefaultTabController(
-      length: 4,
-      initialIndex: _getInitialTabIndex(),
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: isDarkMode ? theme.scaffoldBackgroundColor : const Color(0xFFFDFCF8), 
         appBar: AppBar(
           title: Text(
@@ -155,6 +233,7 @@ class _LessonsTabScreenState extends State<LessonsTabScreen> {
             )
           ],
           bottom: TabBar(
+            controller: _tabController,
             isScrollable: true,
             tabAlignment: TabAlignment.center,
             labelColor: isDarkMode ? Colors.white : const Color(0xFF2F4F4F),
@@ -171,6 +250,7 @@ class _LessonsTabScreenState extends State<LessonsTabScreen> {
           ),
         ),
         body: TabBarView(
+          controller: _tabController,
           children: [
             _buildCategoryBody('Fácil', 1, 10, Colors.blue, isDarkMode),
             _buildCategoryBody('Normal', 11, 20, Colors.green, isDarkMode),
@@ -178,8 +258,7 @@ class _LessonsTabScreenState extends State<LessonsTabScreen> {
             _buildCategoryBody('Teológico', 31, 40, Colors.purple, isDarkMode),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildCategoryBody(String categoryName, int startId, int endId, Color nodeColor, bool isDark) {
@@ -255,10 +334,21 @@ class _LessonsTabScreenState extends State<LessonsTabScreen> {
   Widget _buildLessonNode(int lessonId, Color nodeColor, bool isUnlocked, bool isCurrent, bool isDark, bool isLast) {
     // Obtenemos el nombre real de la lección
     final String title = lessonsDatabase[lessonId]?.title ?? 'Lección $lessonId (Próximamente)';
-    final Color currentColor = isUnlocked ? nodeColor : (isDark ? Colors.grey[700]! : Colors.grey.withValues(alpha: 0.3));
+    final bool isCompleted = lessonId < _unlockedLesson;
+    
+    // Determinar colores y estilos según el estado de la lección
+    Color currentColor = isUnlocked ? nodeColor : (isDark ? Colors.grey[700]! : Colors.grey.withValues(alpha: 0.3));
+    if (isCompleted) currentColor = Colors.green; // Lección completada se pinta verde
+    
+    IconData nodeIcon = Icons.lock_outline;
+    if (isCompleted) {
+      nodeIcon = Icons.check_circle_rounded;
+    } else if (isUnlocked) {
+      nodeIcon = Icons.menu_book_rounded;
+    }
 
     return GestureDetector(
-      onTap: isUnlocked ? () => _openQuiz(lessonId, nodeColor) : null,
+      onTap: isUnlocked ? () => _showLessonStartDialog(lessonId, nodeColor, title, isCompleted) : null,
       child: Column(
         children: [
           // Item de la lección
@@ -273,8 +363,8 @@ class _LessonsTabScreenState extends State<LessonsTabScreen> {
                   shape: BoxShape.circle,
                   color: isUnlocked ? currentColor.withValues(alpha: 0.15) : Colors.grey.withValues(alpha: 0.1),
                   border: Border.all(
-                    color: isCurrent ? currentColor : Colors.transparent,
-                    width: isCurrent ? 4 : 0,
+                    color: isCurrent || isCompleted ? currentColor : Colors.transparent,
+                    width: isCurrent || isCompleted ? 4 : 0,
                   ),
                   boxShadow: isCurrent ? [
                      BoxShadow(color: currentColor.withValues(alpha: 0.4), blurRadius: 10, spreadRadius: 2)
@@ -282,7 +372,7 @@ class _LessonsTabScreenState extends State<LessonsTabScreen> {
                 ),
                 child: Center(
                   child: Icon(
-                    isUnlocked ? Icons.menu_book_rounded : Icons.lock_outline,
+                    nodeIcon,
                     color: isUnlocked ? currentColor : Colors.grey,
                     size: 40,
                   ),
@@ -316,6 +406,8 @@ class _LessonsTabScreenState extends State<LessonsTabScreen> {
             child: Text(
                title,
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.montserrat(
                 color: isDark ? Colors.white : const Color(0xFF2F4F4F),
                 fontWeight: isUnlocked ? FontWeight.bold : FontWeight.w500,
@@ -330,13 +422,93 @@ class _LessonsTabScreenState extends State<LessonsTabScreen> {
               margin: const EdgeInsets.symmetric(vertical: 8),
               width: 4,
               height: 40,
-              color: isUnlocked && lessonId < _unlockedLesson 
-                  ? currentColor.withValues(alpha: 0.5) 
-                  : Colors.grey.withValues(alpha: 0.2),
+              color: isCompleted 
+                  ? Colors.green.withValues(alpha: 0.5) 
+                  : (isUnlocked ? currentColor.withValues(alpha: 0.5) : Colors.grey.withValues(alpha: 0.2)),
             )
           else
              const SizedBox(height: 20),
         ],
+      ),
+    );
+  }
+
+  void _showLessonStartDialog(int lessonId, Color difficultyColor, String title, bool isCompleted) {
+    if (_globalLives <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No tienes vidas (❤️). Espera $_formattedTimer o descansa.', style: GoogleFonts.montserrat()),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(isCompleted ? Icons.check_circle_rounded : Icons.menu_book_rounded, 
+                 color: isCompleted ? Colors.green : difficultyColor, size: 60),
+            const SizedBox(height: 16),
+            Text(
+              isCompleted ? 'Lección Completada' : 'Lección Actual',
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: GoogleFonts.merriweather(
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isCompleted ? Colors.green : difficultyColor,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(56),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              onPressed: () {
+                Navigator.pop(context); // Cierra modal
+                _openQuiz(lessonId, difficultyColor);
+              },
+              child: Text(
+                isCompleted ? 'Volver a practicar' : 'Iniciar lección',
+                style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancelar',
+                style: GoogleFonts.montserrat(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

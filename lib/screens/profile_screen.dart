@@ -44,6 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = await DatabaseHelper.getUser(_currentUsername);
     if (user != null) {
       final stats = await DatabaseHelper.getUserStats(user['id'] as int);
+      if (!mounted) return;
       setState(() {
         _streakDays = stats['streak_days'] as int? ?? 0;
         _appTimeMinutes = stats['app_time_minutes'] as int? ?? 0;
@@ -215,12 +216,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               final prefs = await SharedPreferences.getInstance();
                               await prefs.setString('session_user', newUsername);
                               
-                              setState(() {
-                                _currentUsername = newUsername;
-                              });
-                              
-                              if (context.mounted) {
+                              if (dialogContext.mounted) {
                                 Navigator.of(dialogContext).pop();
+                              }
+                              
+                              if (mounted) {
+                                setState(() {
+                                  _currentUsername = newUsername;
+                                });
                                 _loadUserStats(); // Recargar si cambió de usuario de alguna manera extraña localmente, aunque es poco probable
                               }
                             } else {
@@ -421,6 +424,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 32),
             const Divider(),
+            ListTile(
+              leading: const Icon(Icons.fast_forward, color: Colors.blue),
+              title: Text('Debug: Saltar a la Lección 10', style: GoogleFonts.montserrat(color: Colors.blue, fontWeight: FontWeight.bold)),
+              subtitle: Text('Desbloquea hasta la lección 10', style: GoogleFonts.montserrat(color: textColor.withValues(alpha: 0.5))),
+              onTap: () async {
+                await PrefsHelper.saveUnlockedLesson(10);
+                if (context.mounted) {
+                   ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Progreso saltado a la lección 10', style: GoogleFonts.montserrat()),
+                      backgroundColor: Colors.blue,
+                    ),
+                  );
+                }
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.bug_report, color: Colors.red),
               title: Text('Debug: Reiniciar Lecciones', style: GoogleFonts.montserrat(color: Colors.red, fontWeight: FontWeight.bold)),

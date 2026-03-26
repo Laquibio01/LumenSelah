@@ -23,7 +23,9 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   bool _isBottomBarVisible = true;
-  Key _lessonsTabKey = UniqueKey();
+  late final PageController _pageController = PageController(initialPage: _selectedIndex);
+  final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
+  final GlobalKey<LessonsTabScreenState> _lessonsKey = GlobalKey<LessonsTabScreenState>();
   Key _profileTabKey = UniqueKey();
 
   Timer? _appTimer;
@@ -38,6 +40,7 @@ class _MainNavigationState extends State<MainNavigation> with WidgetsBindingObse
 
   @override
   void dispose() {
+    _pageController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     _appTimer?.cancel();
     super.dispose();
@@ -64,35 +67,57 @@ class _MainNavigationState extends State<MainNavigation> with WidgetsBindingObse
   }
 
   List<Widget> get _pages => [
-    const HomeScreen(),
-    BibleReaderScreen(
-      onScrollVisibilityChanged: (isVisible) {
-        if (_isBottomBarVisible != isVisible) {
-          setState(() { _isBottomBarVisible = isVisible; });
-        }
-      },
+    _KeepAlivePage(
+      child: HomeScreen(
+        key: _homeKey,
+        onStartLesson: () {
+          _onItemTapped(2);
+          Future.delayed(const Duration(milliseconds: 400), () {
+            _lessonsKey.currentState?.startCurrentLesson();
+          });
+        },
+      ),
     ),
-    LessonsTabScreen(key: _lessonsTabKey),
-    ProfileScreen(
+    _KeepAlivePage(
+      child: BibleReaderScreen(
+        onScrollVisibilityChanged: (isVisible) {
+          if (_isBottomBarVisible != isVisible) {
+            setState(() { _isBottomBarVisible = isVisible; });
+          }
+        },
+      ),
+    ),
+    _KeepAlivePage(child: LessonsTabScreen(key: _lessonsKey)),
+    _KeepAlivePage(
       key: _profileTabKey,
-      themeMode: widget.themeMode,
-      onThemeModeChanged: widget.onThemeModeChanged,
-      onLogout: widget.onLogout,
-      sessionUser: widget.sessionUser,
+      child: ProfileScreen(
+        themeMode: widget.themeMode,
+        onThemeModeChanged: widget.onThemeModeChanged,
+        onLogout: widget.onLogout,
+        sessionUser: widget.sessionUser,
+      ),
     ),
   ];
 
   void _onItemTapped(int index) {
+    if (_selectedIndex == index) return;
+
     setState(() {
-      if (index == 2 && _selectedIndex != 2) {
-        // Regenerate key to force reload when switching to the lessons tab
-        _lessonsTabKey = UniqueKey();
-      } else if (index == 3 && _selectedIndex != 3) {
-        // Regenerate key to force reload when switching to the profile tab
+      if (index == 0) {
+        _homeKey.currentState?.reloadData();
+      } else if (index == 2) {
+        _lessonsKey.currentState?.reloadProgress();
+      } else if (index == 3) {
         _profileTabKey = UniqueKey();
       }
       _selectedIndex = index;
     });
+
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOutCubic,
+    );
   }
 
   @override
@@ -107,8 +132,9 @@ class _MainNavigationState extends State<MainNavigation> with WidgetsBindingObse
         backgroundColor: bgColor,
         body: Stack(
           children: [
-            IndexedStack(
-              index: _selectedIndex,
+            PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
               children: _pages,
             ),
             AnimatedPositioned(
@@ -189,6 +215,24 @@ class _MainNavigationState extends State<MainNavigation> with WidgetsBindingObse
       iconSize: 28,
       onPressed: () => _onItemTapped(index),
     );
+  }
+}
+
+class _KeepAlivePage extends StatefulWidget {
+  final Widget child;
+  const _KeepAlivePage({required this.child, super.key});
+  @override
+  State<_KeepAlivePage> createState() => _KeepAlivePageState();
+}
+
+class _KeepAlivePageState extends State<_KeepAlivePage> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
 

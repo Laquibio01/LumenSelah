@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../helpers/streak_helper.dart';
 import '../services/streak_service.dart';
 import '../data/lessons_data.dart';
+import '../helpers/audio_helper.dart';
 
 class LessonQuizScreen extends StatefulWidget {
   final int lessonId;
@@ -28,6 +29,11 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
   bool _isAnswered = false;
   int? _selectedIdx;
 
+  // Seguimiento de calificación y pistas
+  int _score = 0;
+  bool _failedCurrentQuestion = false;
+  String? _currentHint;
+
   @override
   void initState() {
     super.initState();
@@ -48,77 +54,33 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
     });
 
     if (selectedIndex == correctIndex) {
+      AudioHelper.playCorrect();
+
+      if (!_failedCurrentQuestion) {
+        _score++;
+      }
+      
       // Respuesta Correcta: esperar un poco y avanzar
       await Future.delayed(const Duration(milliseconds: 1000));
       if (!mounted) return;
       await _advanceQuestion();
     } else {
+      AudioHelper.playIncorrect();
+
       // Respuesta Incorrecta
       setState(() {
         _localAttempts--;
+        _failedCurrentQuestion = true;
+        _currentHint = hint;
       });
 
       if (_localAttempts <= 0) {
-        // Pierde la lección
-        await _handleLessonFailure();
+        // Pierde la lección (esperamos 5s para que vea el color rojo y lea la pista)
+        await Future.delayed(const Duration(milliseconds: 5000));
+        if (mounted) await _handleLessonFailure();
       } else {
-        // Muestra la pista (hint)
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-            title: Row(
-              children: [
-                const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                const SizedBox(width: 8),
-                Text('Incorrecto', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: Colors.orange)),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Te quedan $_localAttempts intentos (⚡).', style: GoogleFonts.montserrat(color: isDark ? Colors.white : Colors.black87)),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.lightbulb_outline, color: Colors.orange, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Pista: $hint',
-                          style: GoogleFonts.montserrat(
-                            fontStyle: FontStyle.italic, 
-                            color: isDark ? Colors.orange[200] : Colors.brown[800],
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Entendido', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: widget.accentColor)),
-              ),
-            ],
-          ),
-        );
-        
-        // Al cerrar el diálogo (con Entendido), avanzamos independientemente si fue fallida
+        // En lugar de permitir otro intento, mostramos la pista 5s y avanzamos a la siguiente
+        await Future.delayed(const Duration(milliseconds: 5000));
         if (mounted) {
           await _advanceQuestion();
         }
@@ -131,6 +93,8 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
       setState(() {
         _isAnswered = false;
         _selectedIdx = null;
+        _failedCurrentQuestion = false;
+        _currentHint = null;
         _currentQuestionIndex++;
       });
     } else {
@@ -140,6 +104,8 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
   }
 
   Future<void> _handleLessonFailure() async {
+    AudioHelper.playLessonFailed();
+
     int currentLives = await PrefsHelper.getGlobalLives();
     if (currentLives > 0) {
       await PrefsHelper.saveGlobalLives(currentLives - 1);
@@ -171,9 +137,12 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
   }
 
   Future<void> _handleLessonSuccess() async {
+    AudioHelper.playLessonComplete();
+
     final int currentUnlocked = await PrefsHelper.getUnlockedLesson();
     
-    if (widget.lessonId == currentUnlocked && currentUnlocked < 10) {
+    // Desbloquear siguiente lógica (hasta lección 40 en base de datos)
+    if (widget.lessonId == currentUnlocked && currentUnlocked < 40) {
       await PrefsHelper.saveUnlockedLesson(currentUnlocked + 1);
     }
 
@@ -181,31 +150,109 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
 
     if (!mounted) return;
 
-    showDialog(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Column(
-          children: [
-            const Icon(Icons.menu_book, color: Colors.amber, size: 56),
-            const SizedBox(height: 16),
-            Text('¡Felicidades!', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: widget.accentColor)),
-          ],
-        ),
-        content: Text('Has completado la lección:\n"${_lessonData?.title ?? ''}"\ncon éxito.', style: GoogleFonts.montserrat(), textAlign: TextAlign.center),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: widget.accentColor,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(context); // Cierra diálogo
-              Navigator.pop(context, true); // Cierra pantalla
-            },
-            child: Text('Continuar', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (context) => PopScope(
+        canPop: false,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.star_rounded, color: Colors.amber, size: 80),
+              const SizedBox(height: 16),
+              Text(
+                '¡Lección Completada!',
+                style: GoogleFonts.montserrat(fontSize: 24, fontWeight: FontWeight.bold, color: widget.accentColor),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _lessonData?.title ?? "",
+                style: GoogleFonts.merriweather(fontSize: 18, color: isDark ? Colors.grey[300] : Colors.grey[700], fontStyle: FontStyle.italic),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: widget.accentColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: widget.accentColor.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  children: [
+                    Text('Tu Calificación', style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w600, color: widget.accentColor)),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$_score / $_totalQuestions',
+                      style: GoogleFonts.montserrat(fontSize: 48, fontWeight: FontWeight.bold, color: widget.accentColor),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 48),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: widget.accentColor,
+                        side: BorderSide(color: widget.accentColor, width: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      icon: const Icon(Icons.refresh),
+                      label: Text('Reintentar', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        Navigator.pop(context); // Cierra modal
+                        setState(() {
+                          _currentQuestionIndex = 0;
+                          _localAttempts = 3;
+                          _score = 0;
+                          _isAnswered = false;
+                          _selectedIdx = null;
+                          _failedCurrentQuestion = false;
+                          _currentHint = null;
+                          _showReadingArea = true;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: widget.accentColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.check),
+                      label: Text('Continuar', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        Navigator.pop(context); // Cierra modal
+                        Navigator.pop(context, true); // Cierra pantalla
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -340,10 +387,27 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
       );
     }
 
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0.05, 0), end: Offset.zero).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: _buildQuestionContent(bgColor, textColor, key: ValueKey<int>(_currentQuestionIndex)),
+    );
+  }
+
+  Widget _buildQuestionContent(Color bgColor, Color textColor, {Key? key}) {
     final currentQ = _lessonData!.questions[_currentQuestionIndex];
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SingleChildScrollView(
+      key: key,
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -453,6 +517,39 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
               ),
             );
           }),
+          
+          if (_currentHint != null)
+            AnimatedOpacity(
+              opacity: 1.0,
+              duration: const Duration(milliseconds: 300),
+              child: Container(
+                margin: const EdgeInsets.only(top: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.lightbulb_outline, color: Colors.orange, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Pista: $_currentHint',
+                        style: GoogleFonts.montserrat(
+                          fontStyle: FontStyle.italic,
+                          color: isDark ? Colors.orange[200] : Colors.brown[800],
+                          height: 1.4,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

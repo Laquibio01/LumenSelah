@@ -252,16 +252,49 @@ class DatabaseHelper {
     return await db.query('book', orderBy: 'id ASC');
   }
 
-  // Busca una palabra en toda la Biblia
+  // Construye un patrón GLOB a prueba de acentos, caracteres e imperfecciones
+  static String buildGlobPattern(String query) {
+    String normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) return '*';
+    
+    StringBuffer pattern = StringBuffer('*');
+    for (int i = 0; i < normalized.length; i++) {
+      String char = normalized[i];
+      switch (char) {
+        case 'a': case 'á': pattern.write('[aAáÁ]'); break;
+        case 'e': case 'é': pattern.write('[eEéÉ]'); break;
+        case 'i': case 'í': pattern.write('[iIíÍ]'); break;
+        case 'o': case 'ó': pattern.write('[oOóÓ]'); break;
+        case 'u': case 'ú': case 'ü': pattern.write('[uUúÚüÜ]'); break;
+        case 'n': case 'ñ': pattern.write('[nNñÑ]'); break;
+        case ' ': 
+          pattern.write('*'); // Espacio accidental
+          break;
+        default: 
+          if (RegExp(r'[a-z0-9]').hasMatch(char)) {
+            pattern.write('[${char.toLowerCase()}${char.toUpperCase()}]');
+          } else {
+            pattern.write('*'); 
+          }
+      }
+    }
+    pattern.write('*');
+    // Limpiar asteriscos duplicados
+    return pattern.toString().replaceAll(RegExp(r'\*+'), '*');
+  }
+
+  // Busca una palabra en toda la Biblia indulgente a exactitud ortográfica
   static Future<List<Verse>> searchBible(String keyword) async {
     final db = await getDatabase();
+    String globPattern = buildGlobPattern(keyword);
+
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
       SELECT v.*, b.name as book_name 
       FROM verse v 
       JOIN book b ON v.book_id = b.id 
-      WHERE v.text LIKE ?
+      WHERE v.text GLOB ?
       ORDER BY v.book_id ASC, v.chapter ASC, v.verse ASC
-    ''', ['%$keyword%']);
+    ''', [globPattern]);
 
     return List.generate(maps.length, (i) {
       return Verse.fromMap(maps[i]);
