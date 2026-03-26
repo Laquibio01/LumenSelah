@@ -32,7 +32,6 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
   // Seguimiento de calificación y pistas
   int _score = 0;
   bool _failedCurrentQuestion = false;
-  String? _currentHint;
 
   @override
   void initState() {
@@ -71,30 +70,101 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
       setState(() {
         _localAttempts--;
         _failedCurrentQuestion = true;
-        _currentHint = hint;
       });
 
+      // Mostrar popup con la nota y el botón de continuar
+      await _showIncorrectPopup(hint);
+
       if (_localAttempts <= 0) {
-        // Pierde la lección (esperamos 5s para que vea el color rojo y lea la pista)
-        await Future.delayed(const Duration(milliseconds: 5000));
         if (mounted) await _handleLessonFailure();
       } else {
-        // En lugar de permitir otro intento, mostramos la pista 5s y avanzamos a la siguiente
-        await Future.delayed(const Duration(milliseconds: 5000));
-        if (mounted) {
-          await _advanceQuestion();
-        }
+        if (mounted) await _advanceQuestion();
       }
     }
   }
   
+  Future<void> _showIncorrectPopup(String hint) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (context) => PopScope(
+        canPop: false,
+        child: Container(
+          padding: const EdgeInsets.only(top: 32, bottom: 48, left: 24, right: 24),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cancel_outlined, color: Colors.redAccent, size: 72),
+              const SizedBox(height: 16),
+              Text(
+                '¡Respuesta Incorrecta!',
+                style: GoogleFonts.montserrat(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.lightbulb_outline, color: Colors.orange, size: 20),
+                        const SizedBox(width: 8),
+                        Text('Nota', style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.orange)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      hint,
+                      style: GoogleFonts.merriweather(fontSize: 16, color: isDark ? Colors.grey[300] : Colors.grey[800], height: 1.5),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.accentColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Continuar', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _advanceQuestion() async {
     if (_currentQuestionIndex < _totalQuestions - 1) {
       setState(() {
         _isAnswered = false;
         _selectedIdx = null;
         _failedCurrentQuestion = false;
-        _currentHint = null;
         _currentQuestionIndex++;
       });
     } else {
@@ -141,8 +211,8 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
 
     final int currentUnlocked = await PrefsHelper.getUnlockedLesson();
     
-    // Desbloquear siguiente lógica (hasta lección 40 en base de datos)
-    if (widget.lessonId == currentUnlocked && currentUnlocked < 40) {
+    // Desbloquear siguiente lógica (hasta completar lección 40)
+    if (widget.lessonId == currentUnlocked && currentUnlocked <= 40) {
       await PrefsHelper.saveUnlockedLesson(currentUnlocked + 1);
     }
 
@@ -223,7 +293,6 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
                           _isAnswered = false;
                           _selectedIdx = null;
                           _failedCurrentQuestion = false;
-                          _currentHint = null;
                           _showReadingArea = true;
                         });
                       },
@@ -518,38 +587,6 @@ class _LessonQuizScreenState extends State<LessonQuizScreen> {
             );
           }),
           
-          if (_currentHint != null)
-            AnimatedOpacity(
-              opacity: 1.0,
-              duration: const Duration(milliseconds: 300),
-              child: Container(
-                margin: const EdgeInsets.only(top: 16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.lightbulb_outline, color: Colors.orange, size: 24),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Pista: $_currentHint',
-                        style: GoogleFonts.montserrat(
-                          fontStyle: FontStyle.italic,
-                          color: isDark ? Colors.orange[200] : Colors.brown[800],
-                          height: 1.4,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
         ],
       ),
     );

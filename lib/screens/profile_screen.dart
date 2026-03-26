@@ -422,40 +422,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.fast_forward, color: Colors.blue),
-              title: Text('Debug: Saltar a la Lección 10', style: GoogleFonts.montserrat(color: Colors.blue, fontWeight: FontWeight.bold)),
-              subtitle: Text('Desbloquea hasta la lección 10', style: GoogleFonts.montserrat(color: textColor.withValues(alpha: 0.5))),
-              onTap: () async {
-                await PrefsHelper.saveUnlockedLesson(10);
-                if (context.mounted) {
-                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Progreso saltado a la lección 10', style: GoogleFonts.montserrat()),
-                      backgroundColor: Colors.blue,
-                    ),
-                  );
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.bug_report, color: Colors.red),
-              title: Text('Debug: Reiniciar Lecciones', style: GoogleFonts.montserrat(color: Colors.red, fontWeight: FontWeight.bold)),
-              subtitle: Text('Restaura las vidas a 3 y el nivel a 1', style: GoogleFonts.montserrat(color: textColor.withValues(alpha: 0.5))),
-              onTap: () async {
-                await PrefsHelper.debugResetLessonsProgress();
-                if (context.mounted) {
-                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Progreso reiniciado correctamente', style: GoogleFonts.montserrat()),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              },
-            ),
+
           ],
         ),
       ),

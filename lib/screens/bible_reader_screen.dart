@@ -774,52 +774,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
       final number = match.group(1)!;
       final rest = match.group(2)!;
       
-      // Separamos por títulos internos o retornos de carro.
-      // La base de datos tiene títulos separados por texto y saltos de línea verdaderos.
-      List<String> paragraphs = rest.split(RegExp(r'\r?\n+'));
-      
       List<InlineSpan> builtSpans = [];
       
-      // Procesar títulos y subtítulos ANTES del número y verso
-      if (paragraphs.length > 1) {
-        for (int i = 0; i < paragraphs.length - 1; i++) {
-          String section = paragraphs[i].trim();
-          if (section.isEmpty) continue;
-
-          // Espaciado: un salto sencillo (\n) entre títulos, y doble (\n\n) antes de iniciar el verso real.
-          String suffixes = (i == paragraphs.length - 2) ? '\n\n' : '\n';
-          
-          if (i == 0) {
-            // Título Principal
-            builtSpans.add(TextSpan(
-              text: '$section$suffixes',
-              style: GoogleFonts.montserrat(
-                fontSize: _fontSize * 1.15,
-                fontWeight: FontWeight.w800,
-                color: textColor,
-              ),
-            ));
-          } else {
-            // Subtítulos o referencias cruzadas
-            Color subColor = textColor.withValues(alpha: 0.8);
-            if (section.startsWith('(')) {
-              subColor = Theme.of(context).brightness == Brightness.dark 
-                  ? Colors.red[300]! 
-                  : Colors.red[800]!;
-            }
-
-            builtSpans.add(TextSpan(
-              text: '$section$suffixes',
-              style: GoogleFonts.montserrat(
-                fontSize: _fontSize * 0.95,
-                fontWeight: FontWeight.bold,
-                color: subColor,
-              ),
-            ));
-          }
-        }
-      }
-
       // Añadimos el número del versículo con un tamaño reducido tipo superíndice
       builtSpans.add(WidgetSpan(
         alignment: PlaceholderAlignment.middle,
@@ -836,9 +792,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         ),
       ));
 
-      // Añadimos el texto del versículo (el último bloque que queda)
-      String verseText = paragraphs.last.trim();
-      builtSpans.addAll(highlightKeyword(verseText, searchQuery, textColor));
+      // Añadimos el texto del versículo, manteniendo los saltos de línea (poesía, Salmos, etc) con su estilo normal
+      builtSpans.addAll(highlightKeyword(rest.trim(), searchQuery, textColor));
       
       builtSpans.addAll(getBadges());
 

@@ -165,7 +165,7 @@ class PrefsHelper {
 
   static const String _lastLifeRegenTimeKey = 'lastLifeRegenTime';
   static const int maxLives = 5;
-  static const int minutesPerLife = 5;
+  static const int minutesPerLife = 30;
 
   // == LECCIONES Y VIDAS ==
 

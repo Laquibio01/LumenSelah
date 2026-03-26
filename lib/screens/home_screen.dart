@@ -112,65 +112,19 @@ class HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  GestureDetector(
-                    onTap: () async {
-                      // Debugging - Tap the flame to simulate "Yesterday" (modified to reset for compatibility)
-                      await StreakService().resetStreak();
-                      await PrefsHelper.debugResetLessonsProgress();
-                      _loadData();
-                      setState(() {});
-                      if (context.mounted) {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text('Depuración', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
-                            content: Text('La racha diaria y el progreso de las lecciones han sido reiniciados.', style: GoogleFonts.montserrat()),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text('Aceptar', style: GoogleFonts.montserrat(color: colorScheme.primary)),
-                              )
-                            ],
-                          ),
-                        );
-                      }
-                    },
-                    onLongPress: () async {
-                      // Debugging - Long press to reset streak entirely
-                      await StreakService().resetStreak();
-                      await PrefsHelper.debugResetLessonsProgress();
-                      _loadData();
-                      setState(() {});
-                      if (context.mounted) {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text('Depuración', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
-                            content: Text('La racha y las lecciones se reiniciaron a 0.', style: GoogleFonts.montserrat()),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text('Aceptar', style: GoogleFonts.montserrat(color: colorScheme.primary)),
-                              )
-                            ],
-                          ),
-                        );
-                      }
-                    },
-                    child: Row(
-                      children: [
-                        Icon(Icons.local_fire_department, color: streak > 0 ? colorScheme.primary : Colors.grey, size: 28),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Racha Diaria',
-                          style: GoogleFonts.montserrat(
-                            color: textColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
+                  Row(
+                    children: [
+                      Icon(Icons.local_fire_department, color: streak > 0 ? colorScheme.primary : Colors.grey, size: 28),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Racha Diaria',
+                        style: GoogleFonts.montserrat(
+                          color: textColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                   Text(
                     '$streak días',

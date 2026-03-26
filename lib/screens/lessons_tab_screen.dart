@@ -113,8 +113,79 @@ class LessonsTabScreenState extends State<LessonsTabScreen> with SingleTickerPro
          _showCategoryCompleteModal(20);
       } else if (oldUnlocked == 30 && _unlockedLesson == 31) {
          _showCategoryCompleteModal(30);
+      } else if (oldUnlocked == 40 && _unlockedLesson == 41) {
+         _showJourneyCompleteModal();
       }
     }
+  }
+
+  void _showJourneyCompleteModal() {
+    AudioHelper.playCategoryComplete(); // Utilizamos este mismo sonido triunfal
+    
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.wb_sunny_rounded, color: Colors.amber, size: 48),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                '¡Un Viaje Extraordinario!',
+                style: GoogleFonts.montserrat(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 22,
+                  color: isDark ? Colors.amber[400] : Colors.amber[700],
+                ), 
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Has completado todas las lecciones de LumenSelah.\n\nQue la luz de la Palabra siga guiando tus pasos y que tu crecimiento espiritual nunca se detenga. Este es solo el principio de tu caminar de fe. ✨',
+                style: GoogleFonts.merriweather(
+                  height: 1.6,
+                  fontSize: 15,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber[600],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                  },
+                  child: Text('¡Amén!', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showCategoryCompleteModal(int categoryEndLessonId) {
@@ -489,7 +560,7 @@ class LessonsTabScreenState extends State<LessonsTabScreen> with SingleTickerPro
               ),
               onPressed: () {
                 Navigator.pop(context); // Cierra modal
-                _openQuiz(lessonId, difficultyColor);
+                _showInvestigationReminder(lessonId, difficultyColor);
               },
               child: Text(
                 isCompleted ? 'Volver a practicar' : 'Iniciar lección',
@@ -506,6 +577,81 @@ class LessonsTabScreenState extends State<LessonsTabScreen> with SingleTickerPro
                   fontWeight: FontWeight.w600,
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showInvestigationReminder(int lessonId, Color difficultyColor) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.auto_awesome_rounded, color: Colors.amber, size: 48),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              '¡Un pequeño consejo!',
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+                color: isDark ? Colors.white : const Color(0xFF2F4F4F),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'La app es solo el comienzo. Te animamos a abrir tu Biblia, investigar por tu cuenta y profundizar en la Palabra para hacer crecer tu espíritu cada día. ✨',
+              style: GoogleFonts.merriweather(
+                height: 1.6,
+                fontSize: 15,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                 style: ElevatedButton.styleFrom(
+                   backgroundColor: difficultyColor, 
+                   foregroundColor: Colors.white,
+                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                   padding: const EdgeInsets.symmetric(vertical: 16),
+                   elevation: 0,
+                 ),
+                 onPressed: () {
+                    Navigator.pop(context);
+                    _openQuiz(lessonId, difficultyColor);
+                 },
+                 child: Text('¡Vamos allá!', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+               onPressed: () => Navigator.pop(context),
+               child: Text(
+                 'Regresar', 
+                 style: GoogleFonts.montserrat(
+                   color: isDark ? Colors.white54 : Colors.grey[600], 
+                   fontWeight: FontWeight.w600,
+                 )
+               ),
             ),
           ],
         ),

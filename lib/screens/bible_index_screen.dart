@@ -39,8 +39,8 @@ class _BibleIndexBooksScreenState extends State<BibleIndexBooksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final oldTestament = widget.books.where((b) => b['testament_id'] == 1).toList();
-    final newTestament = widget.books.where((b) => b['testament_id'] == 2).toList();
+    final oldTestament = widget.books.where((b) => (b['id'] as int) <= 39).toList();
+    final newTestament = widget.books.where((b) => (b['id'] as int) >= 40).toList();
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
