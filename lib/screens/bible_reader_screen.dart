@@ -678,12 +678,10 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     );
   }
 
-  Widget _buildParagraph(String text, Color textColor, {bool isFavorite = false, bool hasNote = false, String searchQuery = ''}) {
-    // Limpieza agresiva de saltos de línea provenientes de la base de datos (Ej: Versículo 31 de Génesis 1)
-    String cleanText = text.replaceAll(RegExp(r'[\r\n]+'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-
-    // Implementación para destacar el número del versículo inline (el primer carácter numérico)
-    final match = RegExp(r'^(\d+)\s+(.*)$').firstMatch(cleanText);
+   Widget _buildParagraph(String text, Color textColor, {bool isFavorite = false, bool hasNote = false, String searchQuery = ''}) {
+    // Permite buscar si esto es un Salmo u otro formato con título previo separado por salto de línea
+    // Dejamos los saltos de línea intactos antes del primer procesamiento lógico.
+    final match = RegExp(r'^(\d+)\s+(.*)$', dotAll: true).firstMatch(text.trim());
 
     List<InlineSpan> getBadges() {
       List<InlineSpan> badges = [];
@@ -775,33 +773,86 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     if (match != null) {
       final number = match.group(1)!;
       final rest = match.group(2)!;
+      
+      // Separamos por títulos internos o retornos de carro.
+      // La base de datos tiene títulos separados por texto y saltos de línea verdaderos.
+      List<String> paragraphs = rest.split(RegExp(r'\r?\n+'));
+      
+      List<InlineSpan> builtSpans = [];
+      
+      // Procesar títulos y subtítulos ANTES del número y verso
+      if (paragraphs.length > 1) {
+        for (int i = 0; i < paragraphs.length - 1; i++) {
+          String section = paragraphs[i].trim();
+          if (section.isEmpty) continue;
+
+          // Espaciado: un salto sencillo (\n) entre títulos, y doble (\n\n) antes de iniciar el verso real.
+          String suffixes = (i == paragraphs.length - 2) ? '\n\n' : '\n';
+          
+          if (i == 0) {
+            // Título Principal
+            builtSpans.add(TextSpan(
+              text: '$section$suffixes',
+              style: GoogleFonts.montserrat(
+                fontSize: _fontSize * 1.15,
+                fontWeight: FontWeight.w800,
+                color: textColor,
+              ),
+            ));
+          } else {
+            // Subtítulos o referencias cruzadas
+            Color subColor = textColor.withValues(alpha: 0.8);
+            if (section.startsWith('(')) {
+              subColor = Theme.of(context).brightness == Brightness.dark 
+                  ? Colors.red[300]! 
+                  : Colors.red[800]!;
+            }
+
+            builtSpans.add(TextSpan(
+              text: '$section$suffixes',
+              style: GoogleFonts.montserrat(
+                fontSize: _fontSize * 0.95,
+                fontWeight: FontWeight.bold,
+                color: subColor,
+              ),
+            ));
+          }
+        }
+      }
+
+      // Añadimos el número del versículo con un tamaño reducido tipo superíndice
+      builtSpans.add(WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Padding(
+          padding: const EdgeInsets.only(right: 6.0, bottom: 4.0),
+          child: Text(
+            number,
+            style: GoogleFonts.montserrat(
+              fontSize: _fontSize * 0.65,
+              fontWeight: FontWeight.bold,
+              color: textColor.withValues(alpha: 0.5),
+            ),
+          ),
+        ),
+      ));
+
+      // Añadimos el texto del versículo (el último bloque que queda)
+      String verseText = paragraphs.last.trim();
+      builtSpans.addAll(highlightKeyword(verseText, searchQuery, textColor));
+      
+      builtSpans.addAll(getBadges());
 
       return RichText(
         text: TextSpan(
-          children: [
-            TextSpan(
-              text: '$number ',
-              style: GoogleFonts.montserrat(
-                fontSize: _fontSize,
-                fontWeight: FontWeight.bold,
-                color: textColor,
-                height: _lineHeight,
-              ),
-            ),
-            ...highlightKeyword(rest, searchQuery, textColor),
-            ...getBadges(),
-          ],
+          children: builtSpans,
         ),
       );
     }
 
     return RichText(
       text: TextSpan(
-        children: [
-          ...highlightKeyword(cleanText, searchQuery, textColor),
-          ...getBadges(),
-        ]
-      )
+        children: highlightKeyword(text.replaceAll(RegExp(r'[\r\n]+'), ' ').trim(), searchQuery, textColor),
+      ),
     );
   }
 }
