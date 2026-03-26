@@ -228,9 +228,13 @@ class LessonsTabScreenState extends State<LessonsTabScreen> with SingleTickerPro
               onPressed: () {
                 Navigator.pop(dialogContext); // Cierra dialog
                 int nextTab = 0;
-                if (categoryEndLessonId == 10) nextTab = 1;
-                else if (categoryEndLessonId == 20) nextTab = 2;
-                else if (categoryEndLessonId == 30) nextTab = 3;
+                if (categoryEndLessonId == 10) {
+                  nextTab = 1;
+                } else if (categoryEndLessonId == 20) {
+                  nextTab = 2;
+                } else if (categoryEndLessonId == 30) {
+                  nextTab = 3;
+                }
                 
                 _tabController.animateTo(nextTab);
               },

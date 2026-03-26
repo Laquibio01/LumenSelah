@@ -170,10 +170,10 @@ class _MainNavigationState extends State<MainNavigation> with WidgetsBindingObse
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildNavItem(icon: Icons.home_outlined, index: 0),
-                        _buildNavItem(icon: Icons.menu_book_outlined, index: 1, isAccent: true),
-                        _buildNavItem(icon: Icons.timeline, index: 2),
-                        _buildNavItem(icon: Icons.menu, index: 3),
+                        _buildNavItem(icon: Icons.home_outlined, label: 'Inicio', index: 0),
+                        _buildNavItem(icon: Icons.menu_book_outlined, label: 'Biblia', index: 1, isAccent: true),
+                        _buildNavItem(icon: Icons.timeline, label: 'Lecciones', index: 2),
+                        _buildNavItem(icon: Icons.person_outline, label: 'Tu', index: 3),
                       ],
                     ),
                   ),
@@ -186,34 +186,51 @@ class _MainNavigationState extends State<MainNavigation> with WidgetsBindingObse
     );
   }
 
-  Widget _buildNavItem({required IconData icon, required int index, bool isAccent = false}) {
+  Widget _buildNavItem({required IconData icon, required String label, required int index, bool isAccent = false}) {
     final bool isSelected = _selectedIndex == index;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textColor = colorScheme.onSurface;
     final accentColor = colorScheme.primary;
-    // Si es la pestaña actual y está marcada como 'accent' (como el libro en el mockup)
-    // o simplemente para resaltar el ítem seleccionado.
+    
+    final color = isSelected ? accentColor : textColor.withValues(alpha: 0.6);
+
+    Widget iconWidget;
     if (isAccent && isSelected) {
-      return Container(
+      iconWidget = Container(
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: accentColor,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: IconButton(
-          icon: Icon(icon),
-          color: Colors.white,
-          iconSize: 26,
-          onPressed: () => _onItemTapped(index),
-        ),
+        child: Icon(icon, color: Colors.white, size: 24),
+      );
+    } else {
+      iconWidget = Padding(
+        padding: const EdgeInsets.all(4),
+        child: Icon(icon, color: color, size: 26),
       );
     }
 
-    return IconButton(
-      icon: Icon(icon),
-      color: isSelected ? accentColor : textColor.withValues(alpha: 0.6),
-      iconSize: 28,
-      onPressed: () => _onItemTapped(index),
+    return GestureDetector(
+      onTap: () => _onItemTapped(index),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          iconWidget,
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -512,22 +512,30 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         children: [
           _buildReaderBody(textColor, accentColor),
           
-          SafeArea(
-            child: Align(
-              alignment: Alignment.topRight,
+          // Íconos flotantes en la parte superior derecha, escondiéndose al hacer scroll
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            top: _isBottomBarVisible ? MediaQuery.paddingOf(context).top + 8.0 : -100.0,
+            right: 16.0,
+            child: Material(
+              color: theme.brightness == Brightness.dark ? const Color(0xFF23262E) : Colors.white,
+              borderRadius: BorderRadius.circular(30),
+              elevation: 4,
+              shadowColor: Colors.black.withValues(alpha: 0.2),
               child: Padding(
-                padding: const EdgeInsets.only(top: 8.0, right: 8.0, left: 16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.search),
-                      color: textColor.withValues(alpha: 0.7),
+                      icon: const Icon(Icons.search, size: 24),
+                      color: textColor.withValues(alpha: 0.8),
                       onPressed: _openBibleSearch,
                     ),
                     IconButton(
-                      icon: const Icon(Icons.text_format),
-                      color: textColor.withValues(alpha: 0.7),
+                      icon: const Icon(Icons.text_format, size: 24),
+                      color: textColor.withValues(alpha: 0.8),
                       onPressed: _showReadingSettings,
                     ),
                   ],

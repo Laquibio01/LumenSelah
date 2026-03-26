@@ -4,6 +4,7 @@ import '../helpers/database_helper.dart';
 import '../services/streak_service.dart';
 import '../helpers/streak_helper.dart';
 import '../data/lessons_data.dart';
+import '../data/daily_verses_data.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onStartLesson;
@@ -202,6 +203,10 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDailyVerseCard(ThemeData theme, ColorScheme colorScheme, Color textColor) {
+    // Calculamos el índice basado en la fecha actual para rotar diariamente
+    final int dayIndex = DateTime.now().difference(DateTime(2024, 1, 1)).inDays;
+    final Map<String, int> todayVerse = curatedDailyVerses[dayIndex % curatedDailyVerses.length];
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -228,9 +233,8 @@ class HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          // Aquí buscamos Salmos (19), Cap 119, Ver 105
           FutureBuilder<Verse?>(
-            future: DatabaseHelper.getVerse(19, 119, 105),
+            future: DatabaseHelper.getVerse(todayVerse['bookId']!, todayVerse['chapter']!, todayVerse['verse']!),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
